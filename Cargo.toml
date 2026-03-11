@@ -1,0 +1,34 @@
+[package]
+name = "startup-manager"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.95"
+license = "MIT"
+description = "A reversible Windows startup manager with registry, folder, task and service review"
+repository = "https://github.com/siarheisinelnikau/startup-manager"
+build = "build.rs"
+
+[dependencies]
+anyhow = "1.0"
+egui = { version = "=0.33.3", features = ["default_fonts", "accesskit"] }
+egui-winit = { version = "=0.33.3", default-features = false, features = ["clipboard", "links", "accesskit"] }
+egui_software_backend = { version = "=0.0.2", default-features = false, features = ["std"] }
+softbuffer = { version = "=0.4.8", default-features = false }
+winit = { version = "=0.30.13", default-features = false, features = ["rwh_06"] }
+png = "0.18"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+uuid = { version = "1", features = ["v4"] }
+rust-auto-updator = { path = "../rust-auto-updator/crates/rust-auto-updator" }
+windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_Security", "Win32_System_Registry", "Win32_System_Threading", "Win32_System_Environment"] }
+
+[build-dependencies]
+winresource = "0.1"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
