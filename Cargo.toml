@@ -21,7 +21,7 @@ serde_json = "1"
 sha2 = "0.10"
 uuid = { version = "1", features = ["v4"] }
 rust-auto-updator = { path = "../rust-auto-updator/crates/rust-auto-updator" }
-windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_Security", "Win32_System_Registry", "Win32_System_Threading", "Win32_System_Environment"] }
+windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_Security", "Win32_System_Registry", "Win32_System_Threading", "Win32_System_Environment", "Win32_System_Com", "Win32_UI_Shell", "Win32_UI_Controls_Dialogs", "Win32_UI_WindowsAndMessaging", "Win32_UI_Input_KeyboardAndMouse"] }
 
 [build-dependencies]
 winresource = "0.1"

@@ -6,11 +6,11 @@ pub fn rgba(size: u32) -> Vec<u8> {
         for x in 0..size {
             let px = (x as f32 + 0.5) * 32. / size as f32;
             let py = (y as f32 + 0.5) * 32. / size as f32;
-            let color = if (5.0..27.0).contains(&px) && (5.0..27.0).contains(&py) {
-                if (10.0..22.0).contains(&px) && (14.0..18.0).contains(&py) {
+            let color = if (2.0..30.0).contains(&px) && (2.0..30.0).contains(&py) {
+                if ((14.0..18.0).contains(&px) && (14.0..25.0).contains(&py))
+                    || ((7.0..17.0).contains(&py) && (px - 16.).abs() <= (py - 7.) * 0.85)
+                {
                     [255, 235, 195, 255]
-                } else if px >= 23. && py >= 23. {
-                    [229, 148, 66, 255]
                 } else {
                     [13, 103, 98, 255]
                 }

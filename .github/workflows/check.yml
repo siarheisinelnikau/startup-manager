@@ -1,0 +1,31 @@
+name: Check
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: startup-manager
+      - uses: actions/checkout@v4
+        with:
+          repository: siarheisinelnikau/rust-auto-updator
+          ref: v0.1.0
+          path: rust-auto-updator
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - run: cargo fmt --all --check
+        working-directory: startup-manager
+      - run: cargo clippy --all-targets --locked -- -D warnings
+        working-directory: startup-manager
+      - run: cargo test --locked
+        working-directory: startup-manager
+      - run: ./scripts/package.ps1
+        working-directory: startup-manager
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StartupManager-Windows
+          path: startup-manager/dist/*
