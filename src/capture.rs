@@ -10,6 +10,10 @@ use std::{
 
 pub fn run(path: &Path, screen: &str, size: [u32; 2], scale: f32) -> Result<()> {
     ensure!(
+        ["startup", "settings", "empty", "error", "history"].contains(&screen),
+        "Unknown capture screen"
+    );
+    ensure!(
         path.is_absolute(),
         "Screenshot output must be an absolute path"
     );

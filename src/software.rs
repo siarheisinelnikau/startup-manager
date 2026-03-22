@@ -28,6 +28,7 @@ enum Event {
     Access(egui_winit::accesskit_winit::Event),
     DiagnosticExit,
     DiagnosticVisibility(bool),
+    DiagnosticSettings,
 }
 impl From<egui_winit::accesskit_winit::Event> for Event {
     fn from(event: egui_winit::accesskit_winit::Event) -> Self {
@@ -334,11 +335,18 @@ impl ApplicationHandler<Event> for Host {
                     self.repaint.queued = false;
                     self.counters
                         .phase
-                        .store(if visible { 2 } else { 1 }, Ordering::Relaxed);
+                        .store(if visible { 3 } else { 2 }, Ordering::Relaxed);
                     if visible {
                         canvas.needs_exposure = true;
                         self.repaint.invalidate();
                     }
+                }
+            }
+            Event::DiagnosticSettings => {
+                if let Some(canvas) = &mut self.canvas {
+                    canvas.desktop.diagnostic_settings();
+                    self.counters.phase.store(1, Ordering::Relaxed);
+                    self.repaint.invalidate();
                 }
             }
         }
@@ -361,7 +369,13 @@ impl ApplicationHandler<Event> for Host {
             self.counters.input_events.fetch_add(1, Ordering::Relaxed);
         }
         match event {
-            WindowEvent::CloseRequested => event_loop.exit(),
+            WindowEvent::CloseRequested => {
+                if canvas.desktop.request_close() {
+                    event_loop.exit();
+                } else {
+                    self.repaint.invalidate();
+                }
+            }
             WindowEvent::RedrawRequested => {
                 if let Err(error) = self.redraw(event_loop) {
                     self.fail(event_loop, error);
@@ -436,6 +450,9 @@ pub fn run(diagnostic_path: Option<PathBuf>, duration: Option<u64>) -> Result<()
 }
 pub fn verify(path: PathBuf) -> Result<()> {
     run_internal(Some(path), Some(36), true)
+}
+pub fn demo() -> Result<()> {
+    run_internal(None, None, true)
 }
 fn run_internal(
     diagnostic_path: Option<PathBuf>,
@@ -547,9 +564,12 @@ impl Diagnostics {
                         quiet_samples = 0;
                         match lifecycle_phase {
                             0 => {
-                                let _ = proxy.send_event(Event::DiagnosticVisibility(false));
+                                let _ = proxy.send_event(Event::DiagnosticSettings);
                             }
                             1 => {
+                                let _ = proxy.send_event(Event::DiagnosticVisibility(false));
+                            }
+                            2 => {
                                 let _ = proxy.send_event(Event::DiagnosticVisibility(true));
                             }
                             _ => {
