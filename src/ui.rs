@@ -326,7 +326,9 @@ impl Desktop {
         egui::CentralPanel::default()
             .frame(egui::Frame::new().fill(BG).inner_margin(30))
             .show(ctx, |ui| match self.page {
-                Page::Settings => self.settings_ui(ui),
+                Page::Settings => {
+                    egui::ScrollArea::vertical().show(ui, |ui| self.settings_ui(ui));
+                }
                 Page::History => self.history_ui(ui),
                 _ => self.entries_ui(ui),
             });
@@ -422,7 +424,7 @@ impl Desktop {
             ui.add(
                 egui::TextEdit::singleline(&mut self.query)
                     .hint_text("Search name, command or location…")
-                    .desired_width((ui.available_width() - 255.).max(170.)),
+                    .desired_width((ui.available_width() - 345.).max(140.)),
             );
             egui::ComboBox::from_id_salt("state")
                 .selected_text(["All states", "Enabled", "Disabled"][self.filter as usize])
@@ -466,8 +468,10 @@ impl Desktop {
                 ui.label(RichText::new("Reading Windows startup items…").color(ACCENT));
             }
         });
+        self.message_ui(ui);
+        self.warnings_ui(ui);
         ui.add_space(10.);
-        let list_height = (ui.available_height() - 205.).max(140.);
+        let list_height = (ui.available_height() - 205.).max(30.);
         egui::Frame::new()
             .fill(PANEL)
             .stroke(Stroke::new(1., BORDER))
@@ -635,15 +639,20 @@ impl Desktop {
                 });
             });
             ui.add_space(8.);
-            ui.label(
-                RichText::new(&entry.command)
-                    .monospace()
-                    .size(12.)
-                    .color(MUTED),
+            ui.add(
+                egui::Label::new(
+                    RichText::new(&entry.command)
+                        .monospace()
+                        .size(12.)
+                        .color(MUTED),
+                )
+                .truncate(),
             )
             .on_hover_text(&entry.command);
-            ui.label(RichText::new(&entry.location).size(12.).color(MUTED))
-                .on_hover_text(&entry.location);
+            ui.add(
+                egui::Label::new(RichText::new(&entry.location).size(12.).color(MUTED)).truncate(),
+            )
+            .on_hover_text(&entry.location);
             if ui.small_button("Copy details").clicked() {
                 ui.ctx().copy_text(format!(
                     "{}\n{}\n{}",
@@ -656,21 +665,6 @@ impl Desktop {
                     .color(MUTED),
             );
         }
-        if !self.inventory.warnings.is_empty() {
-            ui.add_space(6.);
-            egui::CollapsingHeader::new(format!(
-                "{} locations or items need attention",
-                self.inventory.warnings.len()
-            ))
-            .show(ui, |ui| {
-                egui::ScrollArea::vertical().max_height(90.).show(ui, |ui| {
-                    for warning in &self.inventory.warnings {
-                        ui.colored_label(DANGER, warning);
-                    }
-                });
-            });
-        }
-        self.message_ui(ui);
         if self.updates.update_available() {
             ui.add_space(8.);
             if ui.link("An update is available · Open Settings").clicked() {
@@ -678,14 +672,38 @@ impl Desktop {
             }
         }
     }
+    fn warnings_ui(&self, ui: &mut egui::Ui) {
+        if !self.inventory.warnings.is_empty() {
+            ui.add_space(6.);
+            egui::CollapsingHeader::new(format!(
+                "{} locations or items need attention",
+                self.inventory.warnings.len()
+            ))
+            .show(ui, |ui| {
+                egui::ScrollArea::vertical()
+                    .id_salt("inventory-warnings")
+                    .max_height(48.)
+                    .show(ui, |ui| {
+                        for warning in &self.inventory.warnings {
+                            ui.colored_label(DANGER, warning);
+                        }
+                    });
+            });
+        }
+    }
     fn message_ui(&self, ui: &mut egui::Ui) {
         if let Some((error, text)) = &self.message {
             ui.add_space(10.);
-            ui.label(
-                RichText::new(text)
-                    .size(12.)
-                    .color(if *error { DANGER } else { MUTED }),
-            );
+            egui::ScrollArea::vertical()
+                .id_salt("status-message")
+                .max_height(64.)
+                .show(ui, |ui| {
+                    ui.label(RichText::new(text).size(12.).color(if *error {
+                        DANGER
+                    } else {
+                        MUTED
+                    }));
+                });
         }
     }
     fn history_ui(&mut self, ui: &mut egui::Ui) {
@@ -701,12 +719,12 @@ impl Desktop {
             .color(MUTED),
         );
         ui.add_space(20.);
+        self.message_ui(ui);
         let backups = self.backups.clone();
         egui::ScrollArea::vertical().show(ui,|ui|{
             if backups.is_empty(){ui.add_space(40.);ui.label(RichText::new("No changes yet").size(20.));ui.label("Your backups will appear here after you change a startup item.");}
             for backup in backups{egui::Frame::new().fill(PANEL).corner_radius(8).inner_margin(16).show(ui,|ui|{ui.horizontal(|ui|{ui.vertical(|ui|{ui.label(RichText::new(&backup.entry.name).strong());ui.label(RichText::new(format!("{:?}  ·  {}  ·  {}",backup.operation,backup.entry.source_name(),format_time(backup.timestamp))).size(12.).color(MUTED));ui.label(RichText::new(match &backup.status{Status::Prepared=>"Interrupted change — inspect the original location before recovery".into(),Status::Applied=>"Backup available".into(),Status::Restored=>"Restored".into(),Status::Failed(e)=>format!("Action failed: {e}")}).size(12.).color(if matches!(backup.status,Status::Failed(_)|Status::Prepared){DANGER}else{MUTED}));});ui.with_layout(egui::Layout::right_to_left(egui::Align::Center),|ui|{if ui.add_enabled(!self.busy&&backup.status==Status::Applied,egui::Button::new("Restore")).clicked(){self.send(Command::Restore(backup.id.clone()));}});});});ui.add_space(10.);}
         });
-        self.message_ui(ui);
     }
     fn settings_ui(&mut self, ui: &mut egui::Ui) {
         Self::heading(
@@ -791,8 +809,13 @@ impl Desktop {
         ui.label(RichText::new("Backups & data").size(19.).strong());
         ui.add_space(8.);
         ui.label("Settings and recovery backups are stored in your local application data folder.");
+        let data_path = if self.preview {
+            PathBuf::from("C:\\Users\\Alex\\AppData\\Local\\StartupManager")
+        } else {
+            settings::directory()
+        };
         ui.label(
-            RichText::new(settings::directory().to_string_lossy())
+            RichText::new(data_path.to_string_lossy())
                 .size(12.)
                 .monospace()
                 .color(MUTED),

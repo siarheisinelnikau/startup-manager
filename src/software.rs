@@ -451,9 +451,6 @@ pub fn run(diagnostic_path: Option<PathBuf>, duration: Option<u64>) -> Result<()
 pub fn verify(path: PathBuf) -> Result<()> {
     run_internal(Some(path), Some(36), true)
 }
-pub fn demo() -> Result<()> {
-    run_internal(None, None, true)
-}
 fn run_internal(
     diagnostic_path: Option<PathBuf>,
     duration: Option<u64>,

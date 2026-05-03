@@ -34,14 +34,15 @@ fn run() -> anyhow::Result<()> {
                 .ok_or_else(|| anyhow::anyhow!("Expected absolute PNG path"))?;
             let screen = args.get(3).map_or("startup", String::as_str);
             let scale = args.get(4).map_or(Ok(1.), |s| s.parse::<f32>())?;
-            capture::run(std::path::Path::new(path), screen, [1120, 760], scale)
+            let width = args.get(5).map_or(Ok(1120), |s| s.parse::<u32>())?;
+            let height = args.get(6).map_or(Ok(760), |s| s.parse::<u32>())?;
+            capture::run(std::path::Path::new(path), screen, [width, height], scale)
         }
         Some("--verify-rendering") => software::verify(
             args.get(2)
                 .ok_or_else(|| anyhow::anyhow!("Expected report path"))?
                 .into(),
         ),
-        Some("--demo") => software::demo(),
         Some("--inventory") => {
             let report = windows_sources::scan()?;
             println!("{}", serde_json::to_string_pretty(&report)?);

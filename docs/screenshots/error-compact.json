@@ -1,0 +1,18 @@
+{
+  "backend": "production CPU rasterizer",
+  "elapsed_ms": 24,
+  "frames": 3,
+  "logical_size": [
+    900,
+    620
+  ],
+  "physical_pixels": [
+    900,
+    620
+  ],
+  "scale": 1.0,
+  "scenario": "deterministic isolated fixtures; all actions disabled",
+  "screen": "error",
+  "surface": "client area, offscreen",
+  "version": "0.1.0"
+}
