@@ -164,6 +164,58 @@ pub fn fixtures() -> Vec<Entry> {
         .collect()
 }
 
+/// Real installed Windows executables, represented as isolated startup examples.
+/// These paths supply their actual shell icons; no registration is performed.
+pub fn screen_fixtures() -> Vec<Entry> {
+    let windows = std::env::var_os("SystemRoot")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| "C:\\Windows".into());
+    [
+        ("File Explorer", "explorer.exe"),
+        ("Notepad", "System32\\notepad.exe"),
+        ("Task Manager", "System32\\Taskmgr.exe"),
+        ("Registry Editor", "regedit.exe"),
+        ("Command Prompt", "System32\\cmd.exe"),
+        (
+            "PowerShell",
+            "System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        ),
+        ("Character Map", "System32\\charmap.exe"),
+        ("Resource Monitor", "System32\\resmon.exe"),
+        ("System Configuration", "System32\\msconfig.exe"),
+        ("Magnifier", "System32\\Magnify.exe"),
+        ("Disk Cleanup", "System32\\cleanmgr.exe"),
+        ("Calculator", "System32\\calc.exe"),
+        ("Services Console", "System32\\mmc.exe"),
+    ]
+    .into_iter()
+    .enumerate()
+    .map(|(index, (name, path))| {
+        let mut entry = fixtures()[0].clone();
+        entry.id = format!("screen-{index}");
+        entry.name = name.into();
+        entry.command = format!("\"{}\"", windows.join(path).display());
+        entry.enabled = index != 3 && index != 7;
+        if let Source::Registry {
+            machine,
+            name: registry_name,
+            ..
+        } = &mut entry.source
+        {
+            *registry_name = name.into();
+            *machine = index % 3 == 0;
+        }
+        entry.scope = if index % 3 == 0 {
+            "All users"
+        } else {
+            "Current user"
+        }
+        .into();
+        entry
+    })
+    .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
