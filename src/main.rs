@@ -4,6 +4,7 @@ mod branding;
 mod capture;
 mod engine;
 mod icon_pixels;
+mod icons;
 mod model;
 mod registry;
 mod repaint;

@@ -10,9 +10,9 @@ pub fn rgba(size: u32) -> Vec<u8> {
                 if ((14.0..18.0).contains(&px) && (14.0..25.0).contains(&py))
                     || ((7.0..17.0).contains(&py) && (px - 16.).abs() <= (py - 7.) * 0.85)
                 {
-                    [255, 235, 195, 255]
+                    [224, 231, 244, 255]
                 } else {
-                    [13, 103, 98, 255]
+                    [47, 56, 74, 255]
                 }
             } else {
                 [0, 0, 0, 0]
@@ -82,7 +82,7 @@ mod tests {
             let visible = image.chunks_exact(4).filter(|p| p[3] == 255).count();
             assert!(visible > (size * size / 3) as usize);
             assert_eq!(image[3], 0);
-            assert!(image.chunks_exact(4).any(|p| p == [255, 235, 195, 255]));
+            assert!(image.chunks_exact(4).any(|p| p == [224, 231, 244, 255]));
         }
         assert_eq!(&ico()[..6], &[0, 0, 1, 0, 7, 0]);
     }

@@ -11,14 +11,15 @@ use std::{
     path::PathBuf,
     sync::mpsc::{self, Receiver, Sender},
 };
+mod list;
 
-const BG: Color32 = Color32::from_rgb(17, 23, 31);
-const PANEL: Color32 = Color32::from_rgb(23, 31, 41);
-const SURFACE: Color32 = Color32::from_rgb(30, 40, 52);
-const TEXT: Color32 = Color32::from_rgb(232, 239, 244);
-const MUTED: Color32 = Color32::from_rgb(157, 174, 191);
-const ACCENT: Color32 = Color32::from_rgb(88, 218, 187);
-const BORDER: Color32 = Color32::from_rgb(45, 59, 74);
+const BG: Color32 = Color32::from_rgb(17, 19, 24);
+const PANEL: Color32 = Color32::from_rgb(24, 27, 34);
+const SURFACE: Color32 = Color32::from_rgb(42, 49, 63);
+const TEXT: Color32 = Color32::from_rgb(232, 235, 242);
+const MUTED: Color32 = Color32::from_rgb(158, 167, 183);
+const ACCENT: Color32 = Color32::from_rgb(151, 174, 216);
+const BORDER: Color32 = Color32::from_rgb(53, 59, 72);
 const DANGER: Color32 = Color32::from_rgb(255, 151, 151);
 
 enum Command {
@@ -31,6 +32,7 @@ struct Response {
     result: Result<()>,
     inventory: Result<Inventory>,
     backups: Result<Vec<Backup>>,
+    mutated: bool,
 }
 struct Worker {
     commands: Sender<Command>,
@@ -43,6 +45,7 @@ impl Worker {
         std::thread::spawn(move || {
             let engine = Engine::new();
             while let Ok(command) = rx.recv() {
+                let mutated = !matches!(command, Command::Scan);
                 let result = match command {
                     Command::Scan => Ok(()),
                     Command::Change(entry, operation) => engine.apply(&entry, operation),
@@ -59,6 +62,7 @@ impl Worker {
                         result,
                         inventory,
                         backups,
+                        mutated,
                     })
                     .is_err()
                 {
@@ -103,6 +107,9 @@ pub struct Desktop {
     add_name: String,
     add_path: String,
     export_message: Option<String>,
+    icons: crate::icons::ApplicationIcons,
+    warnings_open: bool,
+    list_metrics: list::ListMetrics,
 }
 impl Desktop {
     fn construct(ctx: &egui::Context, preview: bool) -> Self {
@@ -144,10 +151,12 @@ impl Desktop {
             add_name: String::new(),
             add_path: String::new(),
             export_message: None,
+            icons: crate::icons::ApplicationIcons::new(ctx.clone(), preview),
+            warnings_open: false,
+            list_metrics: list::ListMetrics::default(),
         };
         if preview {
-            result.inventory.entries = model::fixtures();
-            result.selected = Some("fixture-1".into());
+            result.inventory.entries = model::screen_fixtures();
         } else {
             result.send(Command::Scan);
             let ctx = ctx.clone();
@@ -164,6 +173,11 @@ impl Desktop {
     pub fn preview(ctx: &egui::Context, screen: &str) -> Result<Self> {
         let mut result = Self::construct(ctx, true);
         match screen {
+            "selected"=>result.selected=Some("screen-1".into()),
+            "many"=>{
+                let template=result.inventory.entries.clone();
+                result.inventory.entries=(0..500).map(|index|{let mut entry=template[index%template.len()].clone();entry.id=format!("large-{index}");entry.name=format!("{} — {}",entry.name,index+1);entry}).collect();
+            },
             "settings" => result.page=Page::Settings,
             "empty" => {result.inventory.entries.clear();result.selected=None;},
             "error" => result.message=Some((true,"Some all-user startup locations could not be read. Run as administrator to review protected items.".into())),
@@ -175,6 +189,9 @@ impl Desktop {
                 });
             }
             _ => {}
+        }
+        if matches!(result.page, Page::Startup | Page::Tasks | Page::Services) {
+            result.icons.preview(ctx, &result.inventory.entries);
         }
         Ok(result)
     }
@@ -230,22 +247,24 @@ impl Desktop {
             }
         }
     }
-    pub fn receive_background(&mut self, _ctx: &egui::Context) -> bool {
+    pub fn receive_background(&mut self, ctx: &egui::Context) -> bool {
         let mut changed = false;
         if let Some(worker) = &self.worker {
             while let Ok(response) = worker.events.try_recv() {
                 self.busy = false;
                 changed = true;
-                self.message = Some(match response.result {
-                    Ok(()) => (
-                        false,
-                        "Startup list refreshed. Changes apply at the next sign-in or restart."
-                            .into(),
-                    ),
-                    Err(error) => (true, error.to_string()),
-                });
+                self.message = match response.result {
+                    Ok(()) if response.mutated => {
+                        Some((false, "Change saved. Undo is available in History.".into()))
+                    }
+                    Ok(()) => None,
+                    Err(error) => Some((true, error.to_string())),
+                };
                 match response.inventory {
-                    Ok(inventory) => self.inventory = inventory,
+                    Ok(inventory) => {
+                        self.icons.request(&inventory.entries);
+                        self.inventory = inventory;
+                    }
                     Err(error) => self.message = Some((true, error.to_string())),
                 }
                 match response.backups {
@@ -254,6 +273,7 @@ impl Desktop {
                 }
             }
         }
+        changed |= self.icons.receive(ctx);
         let before = update_text(&self.updates);
         let result = self.updates.poll(self.settings.check_on_startup);
         if update_text(&self.updates) != before {
@@ -274,57 +294,47 @@ impl Desktop {
         }
         changed
     }
+    pub fn capture_metrics(&self) -> serde_json::Value {
+        serde_json::json!({"list":self.list_metrics,"resolved_native_icons":self.icons.resolved_count()})
+    }
     pub fn update(&mut self, ctx: &egui::Context) {
-        egui::SidePanel::left("navigation")
-            .exact_width(190.)
-            .resizable(false)
-            .frame(egui::Frame::new().fill(PANEL).inner_margin(22))
+        egui::TopBottomPanel::top("navigation")
+            .frame(
+                egui::Frame::new()
+                    .fill(PANEL)
+                    .inner_margin(egui::Margin::symmetric(12, 6)),
+            )
             .show(ctx, |ui| {
-                ui.add_space(8.);
-                ui.label(RichText::new("↗").size(32.).color(ACCENT));
-                ui.add_space(8.);
-                ui.label(RichText::new("Startup\nManager").size(23.).strong());
-                ui.add_space(8.);
-                ui.label(RichText::new("A lighter sign-in.").color(MUTED));
-                ui.add_space(38.);
-                for (page, label) in [
-                    (Page::Startup, "Startup apps"),
-                    (Page::Tasks, "Scheduled tasks"),
-                    (Page::Services, "Services"),
-                    (Page::History, "History"),
-                    (Page::Settings, "Settings"),
-                ] {
-                    let selected = self.page == page;
-                    let button = egui::Button::new(RichText::new(label).color(if selected {
-                        ACCENT
-                    } else {
-                        TEXT
-                    }))
-                    .fill(if selected {
-                        SURFACE
-                    } else {
-                        Color32::TRANSPARENT
-                    })
-                    .min_size(Vec2::new(146., 42.));
-                    if ui.add(button).clicked() {
-                        self.page = page;
-                        self.query.clear();
-                        self.selected = None;
+                let previous = self.page;
+                ui.horizontal(|ui| {
+                    for (page, label) in [
+                        (Page::Startup, "Startup apps"),
+                        (Page::Tasks, "Scheduled tasks"),
+                        (Page::Services, "Services"),
+                    ] {
+                        ui.selectable_value(&mut self.page, page, label);
                     }
-                }
-                ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
-                    ui.label(
-                        RichText::new(format!("v{}  ·  MIT", crate::VERSION))
-                            .size(12.)
-                            .color(MUTED),
-                    );
-                    if self.preview {
-                        ui.label(RichText::new("DEMO · NO CHANGES").size(11.).color(ACCENT));
-                    }
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                        ui.selectable_value(&mut self.page, Page::Settings, "Settings");
+                        ui.selectable_value(&mut self.page, Page::History, "History");
+                        if self.updates.update_available() && ui.link("Update available").clicked()
+                        {
+                            self.page = Page::Settings;
+                        }
+                    });
                 });
+                if previous != self.page {
+                    self.query.clear();
+                    self.selected = None;
+                }
             });
+        self.details_panel(ctx);
         egui::CentralPanel::default()
-            .frame(egui::Frame::new().fill(BG).inner_margin(30))
+            .frame(
+                egui::Frame::new()
+                    .fill(BG)
+                    .inner_margin(egui::Margin::symmetric(16, 10)),
+            )
             .show(ctx, |ui| match self.page {
                 Page::Settings => {
                     egui::ScrollArea::vertical().show(ui, |ui| self.settings_ui(ui));
@@ -332,6 +342,20 @@ impl Desktop {
                 Page::History => self.history_ui(ui),
                 _ => self.entries_ui(ui),
             });
+        if self.warnings_open {
+            egui::Window::new("Startup locations")
+                .open(&mut self.warnings_open)
+                .default_width(540.)
+                .show(ctx, |ui| {
+                    egui::ScrollArea::vertical()
+                        .max_height(300.)
+                        .show(ui, |ui| {
+                            for warning in &self.inventory.warnings {
+                                ui.label(warning);
+                            }
+                        });
+                });
+        }
         if let Some((entry, operation)) = self.confirm.clone() {
             egui::Window::new(if operation==Operation::Delete{"Remove startup entry?"}else{"Change system startup?"}).collapsible(false).resizable(false).anchor(egui::Align2::CENTER_CENTER,Vec2::ZERO).default_width(430.).show(ctx,|ui|{
             ui.label(RichText::new(&entry.name).strong());ui.add_space(8.);
@@ -396,315 +420,9 @@ impl Desktop {
         }
     }
     fn heading(ui: &mut egui::Ui, title: &str, subtitle: &str) {
-        ui.label(RichText::new(title).size(29.).strong());
-        ui.add_space(6.);
-        ui.label(RichText::new(subtitle).color(MUTED));
-        ui.add_space(24.);
-    }
-    fn entries_ui(&mut self, ui: &mut egui::Ui) {
-        let (title, subtitle, category) = match self.page {
-            Page::Tasks => (
-                "Scheduled tasks",
-                "Review tasks triggered at sign-in or system startup.",
-                "Scheduled tasks",
-            ),
-            Page::Services => (
-                "Services",
-                "Review automatic and disabled services. Changes do not stop running services.",
-                "Services",
-            ),
-            _ => (
-                "Take control of startup.",
-                "Choose what starts with Windows. Keep what you need.",
-                "Startup apps",
-            ),
-        };
-        Self::heading(ui, title, subtitle);
-        ui.horizontal(|ui| {
-            ui.add(
-                egui::TextEdit::singleline(&mut self.query)
-                    .hint_text("Search name, command or location…")
-                    .desired_width((ui.available_width() - 345.).max(140.)),
-            );
-            egui::ComboBox::from_id_salt("state")
-                .selected_text(["All states", "Enabled", "Disabled"][self.filter as usize])
-                .width(100.)
-                .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut self.filter, 0, "All states");
-                    ui.selectable_value(&mut self.filter, 1, "Enabled");
-                    ui.selectable_value(&mut self.filter, 2, "Disabled");
-                });
-            if ui
-                .add_enabled(!self.busy, egui::Button::new("Refresh"))
-                .clicked()
-            {
-                self.send(Command::Scan);
-            }
-            if self.page == Page::Startup
-                && ui
-                    .add_enabled(!self.busy, egui::Button::new("+ Add app"))
-                    .clicked()
-            {
-                self.add_open = true;
-            }
-        });
-        ui.add_space(14.);
-        let entries: Vec<Entry> = self
-            .inventory
-            .entries
-            .iter()
-            .filter(|e| {
-                e.category() == category
-                    && e.matches(&self.query)
-                    && (self.filter == 0 || e.enabled == (self.filter == 1))
-            })
-            .cloned()
-            .collect();
-        let enabled = entries.iter().filter(|e| e.enabled).count();
-        ui.horizontal(|ui| {
-            ui.label(RichText::new(format!("{} items", entries.len())).strong());
-            ui.label(RichText::new(format!("·  {enabled} enabled")).color(MUTED));
-            if self.busy {
-                ui.label(RichText::new("Reading Windows startup items…").color(ACCENT));
-            }
-        });
-        self.message_ui(ui);
-        self.warnings_ui(ui);
+        ui.label(RichText::new(title).size(19.).strong());
+        ui.label(RichText::new(subtitle).size(12.).color(MUTED));
         ui.add_space(10.);
-        let list_height = (ui.available_height() - 205.).max(30.);
-        egui::Frame::new()
-            .fill(PANEL)
-            .stroke(Stroke::new(1., BORDER))
-            .corner_radius(10)
-            .inner_margin(10)
-            .show(ui, |ui| {
-                ui.horizontal(|ui| {
-                    ui.add_space(10.);
-                    ui.label(RichText::new("APPLICATION / SOURCE").size(11.).color(MUTED));
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        ui.add_space(15.);
-                        ui.label(RichText::new("STATE").size(11.).color(MUTED));
-                    });
-                });
-                ui.add_space(8.);
-                egui::ScrollArea::vertical()
-                    .max_height(list_height)
-                    .min_scrolled_height(list_height)
-                    .auto_shrink([false, false])
-                    .show(ui, |ui| {
-                        if entries.is_empty() {
-                            ui.add_space(35.);
-                            ui.label(
-                                RichText::new(if self.busy {
-                                    "Reading startup locations…"
-                                } else {
-                                    "No matching startup items"
-                                })
-                                .size(19.),
-                            );
-                            ui.label(
-                                RichText::new("Try another search or refresh the list.")
-                                    .color(MUTED),
-                            );
-                        }
-                        for entry in &entries {
-                            let selected = self.selected.as_ref() == Some(&entry.id);
-                            let frame = egui::Frame::new()
-                                .fill(if selected {
-                                    SURFACE
-                                } else {
-                                    Color32::TRANSPARENT
-                                })
-                                .corner_radius(7)
-                                .inner_margin(10)
-                                .show(ui, |ui| {
-                                    ui.set_min_width(ui.available_width());
-                                    ui.horizontal(|ui| {
-                                        let (rect, _) = ui.allocate_exact_size(
-                                            Vec2::splat(34.),
-                                            egui::Sense::hover(),
-                                        );
-                                        ui.painter().rect_filled(
-                                            rect,
-                                            7.,
-                                            Color32::from_rgb(39, 68, 68),
-                                        );
-                                        ui.painter().text(
-                                            rect.center(),
-                                            egui::Align2::CENTER_CENTER,
-                                            entry.name.chars().next().unwrap_or('?'),
-                                            egui::FontId::proportional(17.),
-                                            ACCENT,
-                                        );
-                                        ui.add_space(8.);
-                                        ui.vertical(|ui| {
-                                            ui.label(RichText::new(&entry.name).strong().size(15.));
-                                            ui.label(
-                                                RichText::new(format!(
-                                                    "{}  ·  {}",
-                                                    entry.source_name(),
-                                                    entry.scope
-                                                ))
-                                                .size(12.)
-                                                .color(MUTED),
-                                            );
-                                        });
-                                        ui.with_layout(
-                                            egui::Layout::right_to_left(egui::Align::Center),
-                                            |ui| {
-                                                ui.label(
-                                                    RichText::new(if entry.enabled {
-                                                        "●  Enabled"
-                                                    } else {
-                                                        "○  Disabled"
-                                                    })
-                                                    .size(12.)
-                                                    .color(if entry.enabled {
-                                                        ACCENT
-                                                    } else {
-                                                        MUTED
-                                                    }),
-                                                );
-                                            },
-                                        );
-                                    });
-                                });
-                            let response = ui.interact(
-                                frame.response.rect,
-                                ui.id().with(&entry.id),
-                                egui::Sense::click(),
-                            );
-                            response.widget_info(|| {
-                                egui::WidgetInfo::selected(
-                                    egui::WidgetType::SelectableLabel,
-                                    true,
-                                    selected,
-                                    &entry.name,
-                                )
-                            });
-                            if response.has_focus() {
-                                ui.painter().rect_stroke(
-                                    frame.response.rect,
-                                    7.,
-                                    Stroke::new(1., ACCENT),
-                                    egui::StrokeKind::Inside,
-                                );
-                            }
-                            if response.clicked() {
-                                self.selected = Some(entry.id.clone());
-                            }
-                            ui.add_space(2.);
-                        }
-                    });
-            });
-        ui.add_space(14.);
-        if let Some(entry) = entries
-            .iter()
-            .find(|e| Some(&e.id) == self.selected.as_ref())
-            .cloned()
-        {
-            ui.horizontal(|ui| {
-                ui.label(RichText::new(&entry.name).size(17.).strong());
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    if ui
-                        .add_enabled(
-                            !self.busy
-                                && !matches!(entry.source, Source::Service { .. })
-                                && entry.backup_id.is_none(),
-                            egui::Button::new(RichText::new("Remove…").color(DANGER)),
-                        )
-                        .clicked()
-                    {
-                        self.confirm = Some((entry.clone(), Operation::Delete));
-                    }
-                    if ui
-                        .add_enabled(
-                            !self.busy,
-                            egui::Button::new(if entry.enabled { "Disable" } else { "Enable" })
-                                .fill(Color32::from_rgb(36, 86, 77)),
-                        )
-                        .clicked()
-                    {
-                        let operation = if entry.enabled {
-                            Operation::Disable
-                        } else {
-                            Operation::Enable
-                        };
-                        if matches!(entry.source, Source::Task { .. } | Source::Service { .. }) {
-                            self.confirm = Some((entry.clone(), operation));
-                        } else {
-                            self.send(Command::Change(Box::new(entry.clone()), operation));
-                        }
-                    }
-                });
-            });
-            ui.add_space(8.);
-            ui.add(
-                egui::Label::new(
-                    RichText::new(&entry.command)
-                        .monospace()
-                        .size(12.)
-                        .color(MUTED),
-                )
-                .truncate(),
-            )
-            .on_hover_text(&entry.command);
-            ui.add(
-                egui::Label::new(RichText::new(&entry.location).size(12.).color(MUTED)).truncate(),
-            )
-            .on_hover_text(&entry.location);
-            if ui.small_button("Copy details").clicked() {
-                ui.ctx().copy_text(format!(
-                    "{}\n{}\n{}",
-                    entry.name, entry.command, entry.location
-                ));
-            }
-        } else {
-            ui.label(
-                RichText::new("Select an item to review its command and change startup behavior.")
-                    .color(MUTED),
-            );
-        }
-        if self.updates.update_available() {
-            ui.add_space(8.);
-            if ui.link("An update is available · Open Settings").clicked() {
-                self.page = Page::Settings;
-            }
-        }
-    }
-    fn warnings_ui(&self, ui: &mut egui::Ui) {
-        if !self.inventory.warnings.is_empty() {
-            ui.add_space(6.);
-            egui::CollapsingHeader::new(format!(
-                "{} locations or items need attention",
-                self.inventory.warnings.len()
-            ))
-            .show(ui, |ui| {
-                egui::ScrollArea::vertical()
-                    .id_salt("inventory-warnings")
-                    .max_height(48.)
-                    .show(ui, |ui| {
-                        for warning in &self.inventory.warnings {
-                            ui.colored_label(DANGER, warning);
-                        }
-                    });
-            });
-        }
-    }
-    fn message_ui(&self, ui: &mut egui::Ui) {
-        if let Some((error, text)) = &self.message {
-            ui.add_space(10.);
-            egui::ScrollArea::vertical()
-                .id_salt("status-message")
-                .max_height(64.)
-                .show(ui, |ui| {
-                    ui.label(RichText::new(text).size(12.).color(if *error {
-                        DANGER
-                    } else {
-                        MUTED
-                    }));
-                });
-        }
     }
     fn history_ui(&mut self, ui: &mut egui::Ui) {
         Self::heading(
@@ -889,19 +607,20 @@ fn theme(ctx: &egui::Context) {
     visuals.extreme_bg_color = BG;
     visuals.faint_bg_color = SURFACE;
     visuals.override_text_color = Some(TEXT);
-    visuals.selection.bg_fill = Color32::from_rgb(37, 84, 79);
+    visuals.selection.bg_fill = SURFACE;
     visuals.selection.stroke = Stroke::new(1., ACCENT);
     visuals.widgets.inactive.bg_fill = SURFACE;
     visuals.widgets.inactive.weak_bg_fill = SURFACE;
     visuals.widgets.inactive.bg_stroke = Stroke::new(1., BORDER);
-    visuals.widgets.hovered.bg_fill = Color32::from_rgb(43, 62, 76);
+    visuals.widgets.hovered.bg_fill = Color32::from_rgb(47, 53, 66);
     visuals.widgets.hovered.bg_stroke = Stroke::new(1., ACCENT);
-    visuals.widgets.active.bg_fill = Color32::from_rgb(42, 81, 76);
+    visuals.widgets.active.bg_fill = Color32::from_rgb(54, 63, 81);
     style.visuals = visuals;
     style.animation_time = 0.;
-    style.spacing.item_spacing = Vec2::new(10., 8.);
-    style.spacing.button_padding = Vec2::new(12., 8.);
-    style.spacing.interact_size.y = 34.;
+    style.spacing.item_spacing = Vec2::new(8., 6.);
+    style.spacing.button_padding = Vec2::new(10., 6.);
+    style.spacing.interact_size.y = 30.;
+    style.spacing.scroll = egui::style::ScrollStyle::solid();
     style
         .text_styles
         .insert(egui::TextStyle::Body, egui::FontId::proportional(14.));
@@ -957,5 +676,123 @@ mod tests {
     fn readable_utc_history_dates() {
         assert_eq!(format_time(0), "1970-01-01  00:00 UTC");
         assert_eq!(format_time(1793491200), "2026-11-01  00:00 UTC");
+    }
+    fn laid_out(screen: &str, size: egui::Vec2) -> Desktop {
+        let ctx = egui::Context::default();
+        let mut desktop = Desktop::preview(&ctx, screen).unwrap();
+        for frame in 0..4 {
+            let _ = ctx.run(
+                egui::RawInput {
+                    screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, size)),
+                    time: Some(frame as f64 / 60.),
+                    ..Default::default()
+                },
+                |ctx| desktop.update(ctx),
+            );
+        }
+        desktop
+    }
+    #[test]
+    fn thirteen_startup_entries_fit_without_sidebar_or_empty_details_reservation() {
+        for size in [egui::vec2(1120., 760.), egui::vec2(900., 620.)] {
+            let desktop = laid_out("startup", size);
+            let metrics = desktop.capture_metrics();
+            assert_eq!(metrics["list"]["total_rows"], 13);
+            assert!(
+                metrics["list"]["first_name_left"].as_f64().unwrap() <= 64.,
+                "Names must remain beside their icons: {metrics}"
+            );
+            assert_eq!(
+                metrics["list"]["fully_visible_rows"], 13,
+                "{size:?}: {metrics}"
+            );
+        }
+        let selected = laid_out("selected", egui::vec2(1120., 760.));
+        assert_eq!(selected.capture_metrics()["list"]["fully_visible_rows"], 13);
+    }
+    #[test]
+    fn large_inventory_only_lays_out_visible_rows() {
+        let desktop = laid_out("many", egui::vec2(1120., 760.));
+        let metrics = desktop.capture_metrics();
+        assert_eq!(metrics["list"]["total_rows"], 500);
+        let visible = metrics["list"]["fully_visible_rows"].as_u64().unwrap();
+        assert!((13..30).contains(&visible), "{metrics}");
+    }
+    #[test]
+    fn row_selection_and_inline_action_use_the_real_widgets() {
+        let ctx = egui::Context::default();
+        let mut desktop = Desktop::preview(&ctx, "startup").unwrap();
+        let mut frame = 0;
+        let mut run = |desktop: &mut Desktop, events: Vec<egui::Event>| {
+            frame += 1;
+            let _ = ctx.run(
+                egui::RawInput {
+                    screen_rect: Some(egui::Rect::from_min_size(
+                        egui::Pos2::ZERO,
+                        egui::vec2(1120., 760.),
+                    )),
+                    time: Some(frame as f64 / 60.),
+                    events,
+                    ..Default::default()
+                },
+                |ctx| desktop.update(ctx),
+            );
+        };
+        for _ in 0..3 {
+            run(&mut desktop, vec![]);
+        }
+        let point = egui::pos2(80., 142.);
+        run(
+            &mut desktop,
+            vec![
+                egui::Event::PointerMoved(point),
+                egui::Event::PointerButton {
+                    pos: point,
+                    button: egui::PointerButton::Primary,
+                    pressed: true,
+                    modifiers: egui::Modifiers::NONE,
+                },
+            ],
+        );
+        run(
+            &mut desktop,
+            vec![egui::Event::PointerButton {
+                pos: point,
+                button: egui::PointerButton::Primary,
+                pressed: false,
+                modifiers: egui::Modifiers::NONE,
+            }],
+        );
+        assert_eq!(desktop.selected.as_deref(), Some("screen-0"));
+        run(&mut desktop, vec![]);
+        let point = egui::pos2(1056., 142.);
+        run(
+            &mut desktop,
+            vec![
+                egui::Event::PointerMoved(point),
+                egui::Event::PointerButton {
+                    pos: point,
+                    button: egui::PointerButton::Primary,
+                    pressed: true,
+                    modifiers: egui::Modifiers::NONE,
+                },
+            ],
+        );
+        run(
+            &mut desktop,
+            vec![egui::Event::PointerButton {
+                pos: point,
+                button: egui::PointerButton::Primary,
+                pressed: false,
+                modifiers: egui::Modifiers::NONE,
+            }],
+        );
+        assert!(
+            desktop
+                .message
+                .as_ref()
+                .is_some_and(|(_, text)| text.starts_with("Demo mode:")),
+            "The inline action must reach the isolated command dispatcher"
+        );
     }
 }

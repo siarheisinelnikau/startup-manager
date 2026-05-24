@@ -10,7 +10,10 @@ use std::{
 
 pub fn run(path: &Path, screen: &str, size: [u32; 2], scale: f32) -> Result<()> {
     ensure!(
-        ["startup", "settings", "empty", "error", "history"].contains(&screen),
+        [
+            "startup", "selected", "many", "settings", "empty", "error", "history"
+        ]
+        .contains(&screen),
         "Unknown capture screen"
     );
     ensure!(
@@ -81,7 +84,7 @@ pub fn run(path: &Path, screen: &str, size: [u32; 2], scale: f32) -> Result<()> 
             fs::write(
                 path.with_extension("json"),
                 serde_json::to_vec_pretty(
-                    &serde_json::json!({"version":crate::VERSION,"backend":"production CPU rasterizer","surface":"client area, offscreen","screen":screen,"scenario":"deterministic isolated fixtures; all actions disabled","physical_pixels":[width,height],"logical_size":size,"scale":scale,"frames":frame+1,"elapsed_ms":start.elapsed().as_millis()}),
+                    &serde_json::json!({"version":crate::VERSION,"backend":"production CPU rasterizer","surface":"client area, offscreen","screen":screen,"scenario":"isolated examples of installed Windows utilities; all startup mutations disabled","physical_pixels":[width,height],"logical_size":size,"scale":scale,"frames":frame+1,"elapsed_ms":start.elapsed().as_millis(),"metrics":desktop.capture_metrics()}),
                 )?,
             )?;
             return Ok(());
