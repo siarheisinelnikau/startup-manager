@@ -1,45 +1,66 @@
-# Verification — 2026-11-01
+# Verification — Startup Manager 0.1.1
 
-Artifact: `StartupManager-v0.1.0.exe`, optimized Windows x64 GUI build, 4,391,936 bytes.
+Date: 2026-11-01. Rust 1.96.1, Windows x64, optimized portable GUI executable.
 
-SHA-256: `a69418466316d84152b440fead66e7834702a300172e79a378e858e7ba22393a`.
+Artifact: `StartupManager-v0.1.1.exe`, 4,440,576 bytes.
 
-## Automated and native checks
+SHA-256: `e392e8f36dcc50dfac46e7601ef130b08e72d8c9020f3bfcd7521617272120f5`.
 
-- `cargo fmt --all --check` and strict all-target Clippy passed with the locked offline dependency graph on Rust 1.96.1.
-- Thirteen automated regressions passed. They cover byte-preserving file/REG_EXPAND_SZ recovery, destination conflicts, stale commands, backup corruption, source-boundary checks, native Windows approval-marker round trips, search, UTC dates and hidden/idle repaint scheduling.
-- The explicit scheduled-task integration test passed separately: it created one uniquely named task with **no triggers**, enabled it, undid that change, deleted/restored it, rejected stale XML and confirmed final deletion of the fixture. No task action was executed.
-- Native registry tests used uniquely named keys below `HKCU\Software\StartupManagerTests`. Existing startup values were not changed.
-- Real read-only inventory outside the sandbox found 13 registry entries, 50 sign-in/boot tasks and 97 automatic/disabled services. One unsupported Startup-folder item was left unchanged with a warning. Ordinary sandbox reads correctly surfaced denied locations instead of reporting them as empty.
-- PE inspection verified x86_64, Windows GUI subsystem and no imported dynamic MSVC runtime or GPU graphics API. This import check supplements the renderer source/runtime evidence below.
-- Windows loaded and drew the final EXE's icon resource at 16, 20, 24, 32, 48, 64 and 256 pixels on light/dark backgrounds. No application entrypoint was executed for the resource proof.
+## Interface acceptance
 
-## Renderer and event-loop gate
+The previous interface reserved a sidebar, large branding/heading, a refresh message, tall two-line rows and 205 logical pixels below the list even without a selection. The user's 13-entry inventory consequently showed only about three rows.
 
-The production path is **egui -> egui_software_backend CPU rasterization -> retained pixel buffer -> softbuffer's Win32 GDI DIB/BitBlt backend**. Pinned backend source and the application event loop were inspected. The host uses `ControlFlow::Wait` or a finite repaint deadline, coalesces requests, compares scenes before rasterization, and skips hidden/minimized layout, raster and presentation. Background work uses waiting channels and finite worker operations.
+The new interface uses a compact top navigation strip and 36-pixel single-line rows. The table receives the remaining height. Details consume 96 pixels only when selected; each row has a direct Enable/Disable button. Successful refreshes create no permanent message. Location notices open from a compact toolbar button. Interface accents and the application icon use neutral gray/blue-gray instead of green.
 
-The finite native diagnostic used the packaged EXE, PID 2756, isolated six-entry fixtures, no network/OS mutations, one-second process CPU samples, native hide/restore and a 45-second external deadline. The process exited normally. Navigation to Settings used the real application page state and renderer, without injected OS input.
+Measured from the actual production UI layout in the PNG sidecars:
 
-| State | Quiet sample | UI/layout passes | CPU rasters | GDI presents | Maximum CPU, one core | Maximum machine-normalized CPU |
+| View | Logical dimensions | Fully visible rows | Available list height | Actual file icons |
+| --- | --- | --- | --- | --- |
+| Startup, no selection | 1120 × 760 | 13 / 13 | 632 px | 13 |
+| Startup, no selection | 900 × 620 | 13 / 13 | 492 px | 13 |
+| Startup at 125% | 900 × 620 | 13 / 13 | 492 logical px | 13 |
+| Selected item with details | 1120 × 760 | 13 / 13 | 536 px | 13 |
+| Large inventory | 1120 × 760 | 17 full rows + clipped boundary row / 500 | 632 px | 13 cached native resources reused across 500 examples |
+
+These are isolated example registrations of installed Windows utilities, with real icons extracted from those executables. They are not a claim that those utilities are registered for startup on the user's computer. The captures do not change Windows configuration or send update requests.
+
+Names begin beside their icons, at x=54 logical pixels, instead of being centered in the wide name column. Row selection and inline action dispatch are exercised by synthetic input sent to the actual egui widgets. Large lists use visible-row virtualization and clone an entry snapshot only for a selected detail/action.
+
+## Icon pipeline
+
+The normal application sends icon requests after inventory changes to a separate waiting worker. The worker resolves quoted commands/environment variables and reads EXE or shortcut icons through Windows Shell/resource APIs. Pixels and textures are cached by file identity/metadata. Painting performs no filesystem or icon-extraction call. Direct UNC and mapped remote-drive targets are skipped. Missing/unreadable targets use a native generic application icon, with a neutral glyph as a last fallback. These operations never run the startup command.
+
+Windows GDI draws native HICON resources to a DIB; black/white passes reconstruct transparency. A direct resource-extraction fallback handles shell-association lookup failures. Native tests verify executable lookup, environment/quote handling, visible pixels and alpha.
+
+The final application's own embedded icon was loaded and drawn at 16, 20, 24, 32, 48, 64 and 256 px on light/dark backgrounds. Source bindings still assign both small/window and big/taskbar icons. OS Explorer caching, actual taskbar appearance and native keyboard traversal were not inspected through computer use.
+
+## Automated checks
+
+- Formatting and strict all-target Clippy passed.
+- Eighteen automated regressions passed; the one opt-in scheduled-task mutation test remains skipped in the normal suite. Four UI regressions were rerun after the final stable row-action ID adjustment.
+- Tests cover 13-row capacity at both sizes, capacity with selected details, left alignment, 500-row virtualization, actual row clicks/inline dispatch, native icons, and the existing recovery/scheduling regressions.
+- PE inspection verified x86_64, GUI subsystem, and no imported dynamic MSVC runtime or GPU graphics API. Native icon loading and source/backend inspection supplement the import evidence.
+- Eleven current application-generated PNGs cover populated, selected, compact/125%, 500-entry, empty/error, History and Settings states. Every bounded capture exited normally. README uses current real screenshots.
+
+## Renderer/load gate
+
+Source and pinned dependencies retain **egui -> CPU software rasterizer -> retained bitmap -> softbuffer Win32 GDI DIB/BitBlt**. No polling render loop or continuous animation was added. Workers wait for jobs; icon-result wakes are bounded. Hidden windows preserve dirty state without constructing/rasterizing/presenting the window.
+
+Packaged EXE diagnostic PID 10880; 13-entry fixture with native icons, no network or user-data changes, one-second process CPU samples, programmatic Settings navigation, native hide/restore, and a 45-second external deadline. The process exited normally.
+
+| State | Quiet sample | UI/layout | Window rasters | Presents | Maximum one-core CPU | Maximum machine CPU |
 | --- | --- | --- | --- | --- | --- | --- |
-| Startup list, settled | 5 seconds | 0 | 0 | 0 | 1.560% | 0.0780% |
-| Settings after navigation, settled | 5 seconds | 0 | 0 | 0 | 0.000% | 0.0000% |
-| Hidden window | 5 seconds | 0 | 0 | 0 | 1.559% | 0.0780% |
-| Restored window, settled | 5 seconds | 0 | 0 | 0 | 0.000% | 0.0000% |
+| Startup list | 5 seconds | 0 | 0 | 0 | 0.000% | 0.0000% |
+| Settings after navigation | 5 seconds | 0 | 0 | 0 | 0.000% | 0.0000% |
+| Hidden | 5 seconds | 0 | 0 | 0 | 0.000% | 0.0000% |
+| Restored Settings | 5 seconds | 0 | 0 | 0 | 0.000% | 0.0000% |
 
-The complete session produced 5 UI passes, 2 rasterizations and 3 presentations, including startup, navigation and restore. Restore reused the retained bitmap. Maximum measured draw callback duration was 16.047 ms. The diagnostic sampler/report writer contributes to process CPU; zero-valued samples are timer-quantized, not a claim of zero CPU cycles.
+The complete session produced 5 UI passes, 2 rasterizations and 3 presentations including initialization, navigation and restore. Restore reused the retained bitmap. Maximum callback draw duration was 20.574 ms. Zero CPU samples are timer-quantized and do not mean literally zero cycles. GPU utilization and compositor latency were not sampled.
 
-These checks establish a sleeping static CPU/GDI interface and stopped hidden rendering in the measured fixture. GPU utilization, Windows compositor latency, subjective input latency, large real-world inventories and interactive minimize/keyboard/file-picker behavior were not measured. No full-workload performance claim is made.
+## Scope and remaining checks
 
-## Actual visual review
+Normal asynchronous icon arrival, perceived native input latency, actual OS keyboard/file-picker traversal and 500-entry native interaction timing are not certified by a static PNG or the 13-entry native diagnostic. Automated input tests exercise real UI components without injecting OS input.
 
-Eight current PNGs were produced by the executable's bounded render-save-exit mode and inspected: main list, Settings, empty state, error state, History, 125% main view, 900 x 620 compact main view and compact error state. Every capture process exited. The captures use the same UI components/fonts and CPU rasterizer as production, with deterministic example data and disabled mutations/network.
+No existing startup entry, task or service was changed for this UI revision. Initial 0.1.0 validation separately covered an isolated native scheduled-task round trip and real read-only inventory; backend mutation code is unchanged. Real service-mode mutation and installed-app update installation remain unverified. The shared updater remains integrated with its existing preference and shutdown contract.
 
-Visual review caught and fixed an overflowing toolbar and an error message clipped below the window. Errors now precede the list, full commands remain available through tooltips/copy, and Settings can scroll at smaller heights. Captures are client-area evidence; they do not prove OS title-bar/taskbar icon appearance, window activation, real keyboard traversal or file-picker interaction. Window small/big icon assignments were reviewed in source, while packaged resources were verified separately.
-
-## Remaining boundaries
-
-- No real service startup mode was changed, no existing scheduled task was modified, and no installed application update was performed.
-- Startup Manager's first GitHub repository/release is not yet published. Its online update flow cannot discover a first release until that exists. Shared updater controller tests cover opt-out/duplicate suppression; the library's 19 tests and native replacement/rollback smoke fixture passed separately.
-- Publication through Windows Computer Use stopped because the helper could not confidently determine Chrome's current URL. No further browser input was sent. The GitHub plugin exposes no repository/release creation or asset-upload operation. No remote source or release was modified.
-- The canonical shared updater repository/tag must be published before consumer CI can provision the sibling dependency.
+No GitHub repository/release was created or modified in this UI revision. Publication prerequisites from the original preparation remain outstanding. Sources, assets and license notices are local.
