@@ -1,0 +1,28 @@
+{
+  "backend": "production CPU rasterizer",
+  "elapsed_ms": 42,
+  "frames": 3,
+  "logical_size": [
+    1120,
+    760
+  ],
+  "metrics": {
+    "list": {
+      "first_name_left": 54.0,
+      "fully_visible_rows": 17,
+      "list_height": 632.0,
+      "selected_details": false,
+      "total_rows": 500
+    },
+    "resolved_native_icons": 500
+  },
+  "physical_pixels": [
+    1120,
+    760
+  ],
+  "scale": 1.0,
+  "scenario": "isolated examples of installed Windows utilities; all startup mutations disabled",
+  "screen": "many",
+  "surface": "client area, offscreen",
+  "version": "0.1.1"
+}

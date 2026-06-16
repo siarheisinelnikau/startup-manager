@@ -2,9 +2,13 @@
 
 A portable Windows startup manager built in Rust. Review what starts with Windows, disable unwanted entries, and restore changes from local backups.
 
-![Startup apps with a selected entry and its original command](docs/screenshots/startup.png)
+![Compact startup table with native application icons and inline actions](docs/screenshots/startup.png)
 
-Actual application client area, rendered by the production CPU renderer with isolated example data. Demo captures do not change the computer's startup configuration.
+Actual application client area rendered by the production CPU renderer. The 13 example registrations use installed Windows utilities and their real file icons; captures do not change startup configuration.
+
+The list fills the window below a compact navigation strip. At 900 × 620 logical pixels all 13 examples fit without scrolling; at 1120 × 760 they also fit with the selected item's details open. Enable/disable is available in every row. The neutral gray palette has no green accents.
+
+Application icons come from executable/shortcut resources on a cached background worker. Missing or inaccessible targets use a standard application icon. Large inventories construct only visible rows; icon extraction and filesystem lookup never run during painting.
 
 ## What it manages
 
@@ -21,9 +25,11 @@ This is an on-demand management window. Closing exits the application; it does n
 
 ## Everyday use
 
-1. Open `StartupManager-v0.1.0.exe` and select an entry to inspect its command and location.
-2. Use **Disable** to keep a recoverable copy, or **Remove…** to remove the startup registration after confirmation.
-3. Use **Enable** for a disabled entry, or **History → Restore** to undo a recorded change.
+1. Open `StartupManager-v0.1.1.exe`. Use **Disable** or **Enable** directly in an application's row.
+2. Select an entry to inspect its command/location and access **Copy details** or **Remove…**. **Close details** gives the entire list its height again.
+3. Use **History → Restore** to undo a recorded change. Location notices open from the compact toolbar without taking permanent space from the list.
+
+![Selected startup entry with its original command and recovery-backed removal](docs/screenshots/selected.png)
 
 For protected tasks, all-user registry values and service changes, start the application with Windows' **Run as administrator**. Access failures are shown inline; the app does not silently elevate.
 
@@ -62,7 +68,7 @@ cargo test --locked
 ./scripts/package.ps1
 ```
 
-Use `./scripts/package.ps1 -Offline` when dependencies are already cached. The release links the C runtime statically and produces `dist/StartupManager-v0.1.0.exe`, `SHA256SUMS.txt`, the MIT license and third-party notices. CI checks out the library at `v0.1.0`; publish that repository/tag before enabling consumer CI.
+Use `./scripts/package.ps1 -Offline` when dependencies are already cached. The release links the C runtime statically and produces `dist/StartupManager-v0.1.1.exe`, `SHA256SUMS.txt`, the MIT license and third-party notices. CI checks out the library at `v0.1.0`; publish that repository/tag before enabling consumer CI.
 
 Refresh dependency license attribution with `python scripts/notices.py`. See [verification](docs/VERIFICATION.md) for completed checks and precise limitations.
 
@@ -70,21 +76,21 @@ Refresh dependency license attribution with `python scripts/notices.py`. See [ve
 
 ```powershell
 # Read-only inventory; output may include local commands and account paths.
-./dist/StartupManager-v0.1.0.exe --inventory
+./dist/StartupManager-v0.1.1.exe --inventory
 
 # Production UI and rasterizer, bounded render-save-exit, isolated example data.
-./dist/StartupManager-v0.1.0.exe --capture E:\captures\startup.png startup
-./dist/StartupManager-v0.1.0.exe --capture E:\captures\settings.png settings
-./dist/StartupManager-v0.1.0.exe --capture E:\captures\compact.png startup 1 900 620
+./dist/StartupManager-v0.1.1.exe --capture E:\captures\startup.png startup
+./dist/StartupManager-v0.1.1.exe --capture E:\captures\settings.png settings
+./dist/StartupManager-v0.1.1.exe --capture E:\captures\compact.png startup 1 900 620
 
 # Finite native visible/settings/hidden/restore test with counters and CPU samples.
-./dist/StartupManager-v0.1.0.exe --verify-rendering E:\captures\rendering.json
+./dist/StartupManager-v0.1.1.exe --verify-rendering E:\captures\rendering.json
 
 # Explicit OS integration test: one disposable scheduled task, with no triggers.
 cargo test native_task_enable_undo_delete_restore_and_conflict_check -- --ignored
 ```
 
-Capture screens are `startup`, `settings`, `empty`, `error`, and `history`. Optional arguments are scale, logical width and logical height. PNG sidecars record the version, dimensions, scale, frame count and capture scope. Diagnostic modes do not read or save ordinary application preferences and never modify real startup entries.
+Capture screens are `startup`, `selected`, `many` (500 rows), `settings`, `empty`, `error`, and `history`. Optional arguments are scale, logical width and logical height. PNG sidecars record the version, dimensions, scale, frame count, visible-row geometry, resolved icon count and capture scope. Diagnostic modes do not read or save ordinary application preferences and never modify real startup entries.
 
 ## Scope
 

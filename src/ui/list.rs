@@ -359,7 +359,7 @@ impl Desktop {
                             columns.action.center(),
                             egui::vec2(70., 28.),
                         );
-                        ui.scope(|ui| {
+                        ui.push_id(("startup-action", &entry.id), |ui| {
                             if self.busy {
                                 ui.disable();
                             }
