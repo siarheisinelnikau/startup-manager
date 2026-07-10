@@ -21,7 +21,7 @@ impl Columns {
     fn new(rect: egui::Rect) -> Self {
         let action = egui::Rect::from_min_max(egui::pos2(rect.right() - 78., rect.top()), rect.max);
         let state = egui::Rect::from_min_max(
-            egui::pos2(action.left() - 92., rect.top()),
+            egui::pos2(action.left() - 50., rect.top()),
             egui::pos2(action.left() - 8., rect.bottom()),
         );
         let scope = egui::Rect::from_min_max(
@@ -41,6 +41,26 @@ impl Columns {
             state,
             action,
         }
+    }
+}
+fn status_icon(painter: &egui::Painter, rect: egui::Rect, enabled: bool) {
+    let center = rect.center();
+    let stroke = Stroke::new(1.35, if enabled { TEXT } else { MUTED });
+    painter.circle_stroke(center, 6.5, stroke);
+    if enabled {
+        painter.add(egui::Shape::line(
+            vec![
+                center + egui::vec2(-3., 0.),
+                center + egui::vec2(-0.5, 2.5),
+                center + egui::vec2(3.5, -2.),
+            ],
+            stroke,
+        ));
+    } else {
+        painter.line_segment(
+            [center - egui::vec2(3., 0.), center + egui::vec2(3., 0.)],
+            stroke,
+        );
     }
 }
 fn text(
@@ -326,13 +346,8 @@ impl Desktop {
                         }
                         text(ui, columns.source, entry.source_name(), MUTED, false);
                         text(ui, columns.scope, &entry.scope, MUTED, false);
-                        text(
-                            ui,
-                            columns.state,
-                            if entry.enabled { "Enabled" } else { "Disabled" },
-                            if entry.enabled { TEXT } else { MUTED },
-                            false,
-                        );
+                        status_icon(ui.painter(), columns.state, entry.enabled);
+                        let state = if entry.enabled { "Enabled" } else { "Disabled" };
                         let selection_rect = egui::Rect::from_min_max(
                             rect.min,
                             egui::pos2(columns.action.left() - 4., rect.bottom()),
@@ -343,7 +358,18 @@ impl Desktop {
                                 ui.id().with(("select-entry", &entry.id)),
                                 egui::Sense::click(),
                             )
-                            .on_hover_text(format!("{}\n{}", entry.name, entry.command));
+                            .on_hover_text(if ui.rect_contains_pointer(columns.state) {
+                                format!(
+                                    "{state} — {}",
+                                    if entry.enabled {
+                                        "starts automatically"
+                                    } else {
+                                        "automatic startup is off"
+                                    }
+                                )
+                            } else {
+                                format!("{}\n{}", entry.name, entry.command)
+                            });
                         if response.has_focus() {
                             ui.painter().rect_stroke(
                                 selection_rect.shrink(1.),
@@ -379,7 +405,7 @@ impl Desktop {
                                 egui::WidgetType::SelectableLabel,
                                 true,
                                 selected,
-                                &entry.name,
+                                format!("{} — {state}", entry.name),
                             )
                         });
                         if response.clicked() {
