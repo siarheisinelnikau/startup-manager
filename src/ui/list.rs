@@ -380,6 +380,7 @@ impl Desktop {
                         }
                         let button =
                             egui::Button::new(if entry.enabled { "Disable" } else { "Enable" })
+                                .frame(false)
                                 .min_size(egui::vec2(70., 28.));
                         let button_rect = egui::Rect::from_center_size(
                             columns.action.center(),
@@ -389,7 +390,43 @@ impl Desktop {
                             if self.busy {
                                 ui.disable();
                             }
-                            if ui.put(button_rect, button).clicked() {
+                            let label = format!(
+                                "{} {}",
+                                if entry.enabled { "Disable" } else { "Enable" },
+                                entry.name
+                            );
+                            let response = ui.put(button_rect, button).on_hover_text(&label);
+                            response.widget_info(|| {
+                                egui::WidgetInfo::labeled(
+                                    egui::WidgetType::Button,
+                                    ui.is_enabled(),
+                                    &label,
+                                )
+                            });
+                            if response.hovered() {
+                                ui.painter().line_segment(
+                                    [
+                                        egui::pos2(
+                                            button_rect.left() + 12.,
+                                            button_rect.bottom() - 5.,
+                                        ),
+                                        egui::pos2(
+                                            button_rect.right() - 12.,
+                                            button_rect.bottom() - 5.,
+                                        ),
+                                    ],
+                                    Stroke::new(1., MUTED),
+                                );
+                            }
+                            if response.has_focus() {
+                                ui.painter().rect_stroke(
+                                    button_rect,
+                                    3.,
+                                    Stroke::new(1., ACCENT),
+                                    egui::StrokeKind::Inside,
+                                );
+                            }
+                            if response.clicked() {
                                 action = Some((
                                     index,
                                     if entry.enabled {
