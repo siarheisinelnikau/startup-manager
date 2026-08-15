@@ -1,3 +1,18 @@
+# Startup Manager 0.1.2
+
+A quieter startup list, following the compact 0.1.1 layout.
+
+## Improved
+
+- Replace repeated Enabled/Disabled cell text with distinct checked-circle and minus-circle icons. State tooltips and accessible row labels retain the full meaning.
+- Narrow the state column to give application names more room.
+- Make row Enable/Disable actions flat text controls with no background or border at rest. Keep the full click area, hover underline, keyboard focus outline and application-specific accessibility label.
+- Preserve row selection, 13-row compact capacity and virtualized large lists.
+
+All four UI component regressions and strict Clippy pass. Current production screenshots and a bounded CPU/GDI rendering diagnostic verify the packaged build; backend behavior is unchanged. Use **StartupManager-v0.1.2.exe** for Windows x64, closing any older running version first. Sources and release assets remain local; this is not a newly published GitHub release.
+
+---
+
 # Startup Manager 0.1.1
 
 A compact interface focused on the startup list. Changes are verified against the initial local 0.1.0 build; neither version has been published to GitHub in this workspace.
