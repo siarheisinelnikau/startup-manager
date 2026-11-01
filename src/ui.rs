@@ -1,3 +1,4 @@
+use crate::{appearance::Theme, i18n::Language};
 use crate::{
     engine::Engine,
     model::{self, Backup, Entry, Inventory, Operation, Source, Status},
@@ -12,15 +13,6 @@ use std::{
     sync::mpsc::{self, Receiver, Sender},
 };
 mod list;
-
-const BG: Color32 = Color32::from_rgb(17, 19, 24);
-const PANEL: Color32 = Color32::from_rgb(24, 27, 34);
-const SURFACE: Color32 = Color32::from_rgb(42, 49, 63);
-const TEXT: Color32 = Color32::from_rgb(232, 235, 242);
-const MUTED: Color32 = Color32::from_rgb(158, 167, 183);
-const ACCENT: Color32 = Color32::from_rgb(151, 174, 216);
-const BORDER: Color32 = Color32::from_rgb(53, 59, 72);
-const DANGER: Color32 = Color32::from_rgb(255, 151, 151);
 
 enum Command {
     Scan,
@@ -113,7 +105,6 @@ pub struct Desktop {
 }
 impl Desktop {
     fn construct(ctx: &egui::Context, preview: bool) -> Self {
-        theme(ctx);
         let loaded = if preview {
             Ok(Settings::default())
         } else {
@@ -122,7 +113,10 @@ impl Desktop {
         let message = loaded.as_ref().err().map(|e| {
             (
                 true,
-                format!("Settings could not be loaded: {e}. Defaults are in use."),
+                format!(
+                    "{}: {e}",
+                    Language::English.text("Settings could not be loaded. Defaults are in use.")
+                ),
             )
         });
         let worker = if preview {
@@ -155,6 +149,8 @@ impl Desktop {
             warnings_open: false,
             list_metrics: list::ListMetrics::default(),
         };
+        theme(ctx, result.settings.theme);
+        load_fonts(ctx);
         if preview {
             result.inventory.entries = model::screen_fixtures();
         } else {
@@ -194,6 +190,20 @@ impl Desktop {
             result.icons.preview(ctx, &result.inventory.entries);
         }
         Ok(result)
+    }
+    pub fn preview_preferences(
+        &mut self,
+        ctx: &egui::Context,
+        language: Language,
+        selected: Theme,
+    ) {
+        assert!(
+            self.preview,
+            "Capture preferences require an isolated preview"
+        );
+        self.settings.language = language;
+        self.settings.theme = selected;
+        theme(ctx, selected);
     }
     pub fn use_live_preview_clock(&mut self) {}
     pub fn diagnostic_settings(&mut self) {
@@ -258,25 +268,46 @@ impl Desktop {
                         Some((false, "Change saved. Undo is available in History.".into()))
                     }
                     Ok(()) => None,
-                    Err(error) => Some((true, error.to_string())),
+                    Err(error) => Some((
+                        true,
+                        self.settings
+                            .language
+                            .format("Operation failed: {error}", &[("error", error.to_string())]),
+                    )),
                 };
                 match response.inventory {
                     Ok(inventory) => {
                         self.icons.request(&inventory.entries);
                         self.inventory = inventory;
                     }
-                    Err(error) => self.message = Some((true, error.to_string())),
+                    Err(error) => {
+                        self.message = Some((
+                            true,
+                            self.settings.language.format(
+                                "Operation failed: {error}",
+                                &[("error", error.to_string())],
+                            ),
+                        ))
+                    }
                 }
                 match response.backups {
                     Ok(backups) => self.backups = backups,
-                    Err(error) => self.message = Some((true, error.to_string())),
+                    Err(error) => {
+                        self.message = Some((
+                            true,
+                            self.settings.language.format(
+                                "Operation failed: {error}",
+                                &[("error", error.to_string())],
+                            ),
+                        ))
+                    }
                 }
             }
         }
         changed |= self.icons.receive(ctx);
-        let before = update_text(&self.updates);
+        let before = update_text(&self.updates, self.settings.language);
         let result = self.updates.poll(self.settings.check_on_startup);
-        if update_text(&self.updates) != before {
+        if update_text(&self.updates, self.settings.language) != before {
             changed = true;
         }
         if result.ready_to_install {
@@ -298,26 +329,37 @@ impl Desktop {
         serde_json::json!({"list":self.list_metrics,"resolved_native_icons":self.icons.resolved_count()})
     }
     pub fn update(&mut self, ctx: &egui::Context) {
+        let language = self.settings.language;
+        let colors = self.settings.theme.colors();
         egui::TopBottomPanel::top("navigation")
             .frame(
                 egui::Frame::new()
-                    .fill(PANEL)
+                    .fill(colors.panel)
                     .inner_margin(egui::Margin::symmetric(12, 6)),
             )
             .show(ctx, |ui| {
                 let previous = self.page;
                 ui.horizontal(|ui| {
                     for (page, label) in [
-                        (Page::Startup, "Startup apps"),
-                        (Page::Tasks, "Scheduled tasks"),
-                        (Page::Services, "Services"),
+                        (Page::Startup, language.text("Startup apps")),
+                        (Page::Tasks, language.text("Scheduled tasks")),
+                        (Page::Services, language.text("Services")),
                     ] {
                         ui.selectable_value(&mut self.page, page, label);
                     }
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        ui.selectable_value(&mut self.page, Page::Settings, "Settings");
-                        ui.selectable_value(&mut self.page, Page::History, "History");
-                        if self.updates.update_available() && ui.link("Update available").clicked()
+                        ui.selectable_value(
+                            &mut self.page,
+                            Page::Settings,
+                            language.text("Settings"),
+                        );
+                        ui.selectable_value(
+                            &mut self.page,
+                            Page::History,
+                            language.text("History"),
+                        );
+                        if self.updates.update_available()
+                            && ui.link(language.text("Update available")).clicked()
                         {
                             self.page = Page::Settings;
                         }
@@ -332,7 +374,7 @@ impl Desktop {
         egui::CentralPanel::default()
             .frame(
                 egui::Frame::new()
-                    .fill(BG)
+                    .fill(colors.bg)
                     .inner_margin(egui::Margin::symmetric(16, 10)),
             )
             .show(ctx, |ui| match self.page {
@@ -343,7 +385,7 @@ impl Desktop {
                 _ => self.entries_ui(ui),
             });
         if self.warnings_open {
-            egui::Window::new("Startup locations")
+            egui::Window::new(language.text("Startup locations"))
                 .open(&mut self.warnings_open)
                 .default_width(540.)
                 .show(ctx, |ui| {
@@ -357,35 +399,37 @@ impl Desktop {
                 });
         }
         if let Some((entry, operation)) = self.confirm.clone() {
-            egui::Window::new(if operation==Operation::Delete{"Remove startup entry?"}else{"Change system startup?"}).collapsible(false).resizable(false).anchor(egui::Align2::CENTER_CENTER,Vec2::ZERO).default_width(430.).show(ctx,|ui|{
+            egui::Window::new(if operation==Operation::Delete{language.text("Remove startup entry?")}else{language.text("Change system startup?")}).collapsible(false).resizable(false).anchor(egui::Align2::CENTER_CENTER,Vec2::ZERO).default_width(430.).show(ctx,|ui|{
             ui.label(RichText::new(&entry.name).strong());ui.add_space(8.);
-            ui.label(if operation==Operation::Delete{"A backup is saved first. Removing this entry stops it from starting automatically; it does not uninstall the application."}else{"Changing a service or system task can affect Windows features, connectivity, or security software. Review its command and purpose before continuing."});ui.add_space(16.);
-            ui.horizontal(|ui|{if ui.button("Cancel").clicked(){self.confirm=None;}
-                if ui.button(if operation==Operation::Delete{"Back up and remove"}else{"Save backup and continue"}).clicked(){self.confirm=None;self.send(Command::Change(Box::new(entry.clone()),operation));}});
+            ui.label(if operation==Operation::Delete{language.text("A backup is saved first. Removing this entry stops it from starting automatically; it does not uninstall the application.")}else{language.text("Changing a service or system task can affect Windows features, connectivity, or security software. Review its command and purpose before continuing.")});ui.add_space(16.);
+            ui.horizontal(|ui|{if ui.button(language.text("Cancel")).clicked(){self.confirm=None;}
+                if ui.button(if operation==Operation::Delete{language.text("Back up and remove")}else{language.text("Save backup and continue")}).clicked(){self.confirm=None;self.send(Command::Change(Box::new(entry.clone()),operation));}});
         });
         }
         if self.add_open {
-            egui::Window::new("Add a startup app")
+            egui::Window::new(language.text("Add a startup app"))
                 .collapsible(false)
                 .resizable(false)
                 .anchor(egui::Align2::CENTER_CENTER, Vec2::ZERO)
                 .default_width(460.)
                 .show(ctx, |ui| {
-                    ui.label("Start an application when you sign in to this account.");
+                    ui.label(
+                        language.text("Start an application when you sign in to this account."),
+                    );
                     ui.add_space(12.);
-                    ui.label("Name");
+                    ui.label(language.text("Name"));
                     ui.text_edit_singleline(&mut self.add_name);
-                    ui.label("Full executable path");
+                    ui.label(language.text("Full executable path"));
                     ui.add(
                         egui::TextEdit::singleline(&mut self.add_path)
                             .desired_width(f32::INFINITY)
                             .hint_text("C:\\Program Files\\App\\App.exe"),
                     );
                     if ui
-                        .add_enabled(!self.preview, egui::Button::new("Browse…"))
+                        .add_enabled(!self.preview, egui::Button::new(language.text("Browse…")))
                         .clicked()
                     {
-                        match browse_executable() {
+                        match browse_executable(language) {
                             Ok(Some(path)) => {
                                 self.add_path = path.to_string_lossy().into();
                                 if self.add_name.trim().is_empty() {
@@ -397,15 +441,23 @@ impl Desktop {
                                 }
                             }
                             Ok(None) => {}
-                            Err(error) => self.message = Some((true, error.to_string())),
+                            Err(error) => {
+                                self.message = Some((
+                                    true,
+                                    self.settings.language.format(
+                                        "Operation failed: {error}",
+                                        &[("error", error.to_string())],
+                                    ),
+                                ))
+                            }
                         }
                     }
                     ui.add_space(12.);
                     ui.horizontal(|ui| {
-                        if ui.button("Cancel").clicked() {
+                        if ui.button(language.text("Cancel")).clicked() {
                             self.add_open = false;
                         }
-                        if ui.button("Add app").clicked() {
+                        if ui.button(language.text("Add app")).clicked() {
                             self.add_open = false;
                             self.send(Command::Add(
                                 self.add_name.clone(),
@@ -420,73 +472,143 @@ impl Desktop {
         }
     }
     fn heading(ui: &mut egui::Ui, title: &str, subtitle: &str) {
+        let colors = if ui.visuals().dark_mode {
+            Theme::Dark
+        } else {
+            Theme::Light
+        }
+        .colors();
         ui.label(RichText::new(title).size(19.).strong());
-        ui.label(RichText::new(subtitle).size(12.).color(MUTED));
+        ui.label(RichText::new(subtitle).size(12.).color(colors.muted));
         ui.add_space(10.);
     }
     fn history_ui(&mut self, ui: &mut egui::Ui) {
+        let language = self.settings.language;
+        let colors = self.settings.theme.colors();
         Self::heading(
             ui,
-            "History & recovery",
-            "Every change keeps its original data. Restore when you need it.",
+            language.text("History & recovery"),
+            language.text("Every change keeps its original data. Restore when you need it."),
         );
         ui.label(
-            RichText::new(
+            RichText::new(language.text(
                 "Backups stay on this computer. Restore never replaces an existing startup entry.",
-            )
-            .color(MUTED),
+            ))
+            .color(colors.muted),
         );
         ui.add_space(20.);
         self.message_ui(ui);
         let backups = self.backups.clone();
         egui::ScrollArea::vertical().show(ui,|ui|{
-            if backups.is_empty(){ui.add_space(40.);ui.label(RichText::new("No changes yet").size(20.));ui.label("Your backups will appear here after you change a startup item.");}
-            for backup in backups{egui::Frame::new().fill(PANEL).corner_radius(8).inner_margin(16).show(ui,|ui|{ui.horizontal(|ui|{ui.vertical(|ui|{ui.label(RichText::new(&backup.entry.name).strong());ui.label(RichText::new(format!("{:?}  ·  {}  ·  {}",backup.operation,backup.entry.source_name(),format_time(backup.timestamp))).size(12.).color(MUTED));ui.label(RichText::new(match &backup.status{Status::Prepared=>"Interrupted change — inspect the original location before recovery".into(),Status::Applied=>"Backup available".into(),Status::Restored=>"Restored".into(),Status::Failed(e)=>format!("Action failed: {e}")}).size(12.).color(if matches!(backup.status,Status::Failed(_)|Status::Prepared){DANGER}else{MUTED}));});ui.with_layout(egui::Layout::right_to_left(egui::Align::Center),|ui|{if ui.add_enabled(!self.busy&&backup.status==Status::Applied,egui::Button::new("Restore")).clicked(){self.send(Command::Restore(backup.id.clone()));}});});});ui.add_space(10.);}
+            if backups.is_empty(){ui.add_space(40.);ui.label(RichText::new(language.text("No changes yet")).size(20.));ui.label(language.text("Your backups will appear here after you change a startup item."));}
+            for backup in backups{egui::Frame::new().fill(colors.panel).corner_radius(8).inner_margin(16).show(ui,|ui|{ui.horizontal(|ui|{ui.vertical(|ui|{ui.label(RichText::new(&backup.entry.name).strong());ui.label(RichText::new(format!("{}  ·  {}  ·  {}",language.text(match backup.operation { Operation::Add => "Add", Operation::Disable => "Disable", Operation::Enable => "Enable", Operation::Delete => "Delete" }),language.text(backup.entry.source_name()),format_time(backup.timestamp))).size(12.).color(colors.muted));ui.label(RichText::new(match &backup.status{Status::Prepared=>language.text("Interrupted change — inspect the original location before recovery").into(),Status::Applied=>language.text("Backup available").into(),Status::Restored=>language.text("Restored").into(),Status::Failed(e)=>language.format("Action failed: {error}", &[("error",e.clone())])}).size(12.).color(if matches!(backup.status,Status::Failed(_)|Status::Prepared){colors.danger}else{colors.muted}));});ui.with_layout(egui::Layout::right_to_left(egui::Align::Center),|ui|{if ui.add_enabled(!self.busy&&backup.status==Status::Applied,egui::Button::new(language.text("Restore"))).clicked(){self.send(Command::Restore(backup.id.clone()));}});});});ui.add_space(10.);}
         });
     }
     fn settings_ui(&mut self, ui: &mut egui::Ui) {
+        let language = self.settings.language;
+        let colors = self.settings.theme.colors();
         Self::heading(
             ui,
-            "Settings",
-            "A small utility, with updates on your terms.",
+            language.text("Settings"),
+            language.text("A small utility, with updates on your terms."),
         );
+        ui.label(
+            RichText::new(language.text("Appearance"))
+                .size(19.)
+                .strong(),
+        );
+        let previous = (self.settings.language, self.settings.theme);
+        egui::Grid::new("appearance-preferences")
+            .spacing([20., 10.])
+            .show(ui, |ui| {
+                ui.label(language.text("Language"));
+                egui::ComboBox::from_id_salt("language")
+                    .selected_text(self.settings.language.name())
+                    .show_ui(ui, |ui| {
+                        for option in Language::ALL {
+                            ui.selectable_value(&mut self.settings.language, option, option.name());
+                        }
+                    });
+                ui.end_row();
+                ui.label(language.text("Theme"));
+                ui.horizontal(|ui| {
+                    ui.selectable_value(
+                        &mut self.settings.theme,
+                        Theme::Light,
+                        language.text("Light"),
+                    );
+                    ui.selectable_value(
+                        &mut self.settings.theme,
+                        Theme::Dark,
+                        language.text("Dark"),
+                    );
+                });
+                ui.end_row();
+            });
+        ui.label(
+            RichText::new(language.text("Changes apply immediately and are saved automatically."))
+                .size(12.)
+                .color(colors.muted),
+        );
+        if previous != (self.settings.language, self.settings.theme) {
+            theme(ui.ctx(), self.settings.theme);
+            ui.ctx().request_repaint();
+            if !self.preview
+                && let Err(error) = settings::save(&self.settings)
+            {
+                self.message = Some((
+                    true,
+                    self.settings.language.format(
+                        "Settings could not be saved: {error}",
+                        &[("error", error.to_string())],
+                    ),
+                ));
+            }
+        }
+        ui.add_space(24.);
         egui::Frame::new()
-            .fill(PANEL)
-            .stroke(Stroke::new(1., BORDER))
+            .fill(colors.panel)
+            .stroke(Stroke::new(1., colors.border))
             .corner_radius(10)
             .inner_margin(24)
             .show(ui, |ui| {
-                ui.label(RichText::new("Updates").size(20.).strong());
+                ui.label(RichText::new(language.text("Updates")).size(20.).strong());
                 ui.add_space(8.);
-                ui.label(format!(
-                    "Startup Manager  ·  Installed version {}",
-                    crate::VERSION
+                ui.label(language.format(
+                    "Startup Manager  ·  Installed version {version}",
+                    &[("version", crate::VERSION.into())],
                 ));
                 ui.add_space(18.);
                 if ui
                     .checkbox(
                         &mut self.settings.check_on_startup,
-                        "Check for updates on startup",
+                        language.text("Check for updates on startup"),
                     )
                     .changed()
                     && !self.preview
                     && let Err(e) = settings::save(&self.settings)
                 {
-                    self.message = Some((true, e.to_string()));
+                    self.message = Some((
+                        true,
+                        language.format(
+                            "Settings could not be saved: {error}",
+                            &[("error", e.to_string())],
+                        ),
+                    ));
                 }
                 ui.label(
-                    RichText::new(
+                    RichText::new(language.text(
                         "Checks run in the background. Downloads start only when you choose.",
-                    )
+                    ))
                     .size(12.)
-                    .color(MUTED),
+                    .color(colors.muted),
                 );
                 ui.add_space(20.);
-                ui.label(RichText::new(update_text(&self.updates)).color(
+                ui.label(RichText::new(update_text(&self.updates, language)).color(
                     if matches!(self.updates.state(), State::Error(_)) {
-                        DANGER
+                        colors.danger
                     } else {
-                        TEXT
+                        colors.text
                     },
                 ));
                 ui.add_space(12.);
@@ -494,14 +616,14 @@ impl Desktop {
                     if ui
                         .add_enabled(
                             self.updates.enabled() && !self.updates.state().busy(),
-                            egui::Button::new("Check for updates"),
+                            egui::Button::new(language.text("Check for updates")),
                         )
                         .clicked()
                     {
                         self.updates.check();
                     }
                     if self.updates.update_available()
-                        && ui.button("Download and install").clicked()
+                        && ui.button(language.text("Download and install")).clicked()
                     {
                         self.updates.download_available();
                     }
@@ -524,9 +646,15 @@ impl Desktop {
                 }
             });
         ui.add_space(24.);
-        ui.label(RichText::new("Backups & data").size(19.).strong());
+        ui.label(
+            RichText::new(language.text("Backups & data"))
+                .size(19.)
+                .strong(),
+        );
         ui.add_space(8.);
-        ui.label("Settings and recovery backups are stored in your local application data folder.");
+        ui.label(language.text(
+            "Settings and recovery backups are stored in your local application data folder.",
+        ));
         let data_path = if self.preview {
             PathBuf::from("C:\\Users\\Alex\\AppData\\Local\\StartupManager")
         } else {
@@ -536,51 +664,69 @@ impl Desktop {
             RichText::new(data_path.to_string_lossy())
                 .size(12.)
                 .monospace()
-                .color(MUTED),
+                .color(colors.muted),
         );
         ui.add_space(12.);
-        if ui.button("Export startup report").clicked() {
+        if ui.button(language.text("Export startup report")).clicked() {
             if self.preview {
-                self.export_message = Some("Export is disabled in demo mode.".into());
+                self.export_message =
+                    Some(language.text("Export is disabled in demo mode.").into());
             } else {
                 let path = settings::directory()
                     .join(format!("startup-report-{}.json", rust_auto_updator::now()));
                 self.export_message = Some(match settings::write_json(&path, &self.inventory) {
-                    Ok(()) => format!("Saved to {}", path.display()),
-                    Err(e) => format!("Export failed: {e}"),
+                    Ok(()) => {
+                        language.format("Saved to {path}", &[("path", path.display().to_string())])
+                    }
+                    Err(e) => {
+                        language.format("Export failed: {error}", &[("error", e.to_string())])
+                    }
                 });
             }
         }
         if let Some(text) = &self.export_message {
-            ui.label(RichText::new(text).size(12.).color(MUTED));
+            ui.label(
+                RichText::new(language.text(text))
+                    .size(12.)
+                    .color(colors.muted),
+            );
         }
         ui.add_space(24.);
-        ui.label(RichText::new("Open source · MIT License").color(MUTED));
+        ui.label(RichText::new(language.text("Open source · MIT License")).color(colors.muted));
         ui.hyperlink_to(
-            "View project on GitHub",
+            language.text("View project on GitHub"),
             "https://github.com/siarheisinelnikau/startup-manager",
         );
         self.message_ui(ui);
     }
 }
-fn update_text(updates: &Controller) -> String {
+fn update_text(updates: &Controller, language: Language) -> String {
     if let Some(reason) = updates.disabled_reason() {
-        return reason.into();
+        return language.text(reason).into();
     }
     match updates.state() {
-        State::Idle => "Ready to check for a newer version.".into(),
-        State::Checking => "Checking GitHub releases…".into(),
-        State::Current => "You are using the latest version.".into(),
-        State::Available(release) => format!("Version {} is available.", release.version),
-        State::Downloading { received, total } => format!(
-            "Downloading: {:.1} / {:.1} MiB",
-            *received as f64 / 1048576.,
-            *total as f64 / 1048576.
+        State::Idle => language.text("Ready to check for a newer version.").into(),
+        State::Checking => language.text("Checking GitHub releases…").into(),
+        State::Current => language.text("You are using the latest version.").into(),
+        State::Available(release) => language.format(
+            "Version {version} is available.",
+            &[("version", release.version.to_string())],
         ),
-        State::Installing => "Preparing to restart and install…".into(),
-        State::Error(error) => format!("Update check or installation failed: {error}"),
+        State::Downloading { received, total } => language.format(
+            "Downloading: {received} / {total} MiB",
+            &[
+                ("received", format!("{:.1}", *received as f64 / 1048576.)),
+                ("total", format!("{:.1}", *total as f64 / 1048576.)),
+            ],
+        ),
+        State::Installing => language.text("Preparing to restart and install…").into(),
+        State::Error(error) => language.format(
+            "Update check or installation failed: {error}",
+            &[("error", error.clone())],
+        ),
     }
 }
+
 fn format_time(timestamp: u64) -> String {
     let days = (timestamp / 86400) as i64 + 719468;
     let era = days / 146097;
@@ -599,22 +745,26 @@ fn format_time(timestamp: u64) -> String {
         timestamp / 60 % 60
     )
 }
-fn theme(ctx: &egui::Context) {
+fn theme(ctx: &egui::Context, selected: Theme) {
+    let colors = selected.colors();
     let mut style = egui::Style::default();
-    let mut visuals = egui::Visuals::dark();
-    visuals.panel_fill = BG;
-    visuals.window_fill = PANEL;
-    visuals.extreme_bg_color = BG;
-    visuals.faint_bg_color = SURFACE;
-    visuals.override_text_color = Some(TEXT);
-    visuals.selection.bg_fill = SURFACE;
-    visuals.selection.stroke = Stroke::new(1., ACCENT);
-    visuals.widgets.inactive.bg_fill = SURFACE;
-    visuals.widgets.inactive.weak_bg_fill = SURFACE;
-    visuals.widgets.inactive.bg_stroke = Stroke::new(1., BORDER);
-    visuals.widgets.hovered.bg_fill = Color32::from_rgb(47, 53, 66);
-    visuals.widgets.hovered.bg_stroke = Stroke::new(1., ACCENT);
-    visuals.widgets.active.bg_fill = Color32::from_rgb(54, 63, 81);
+    let mut visuals = match selected {
+        Theme::Dark => egui::Visuals::dark(),
+        Theme::Light => egui::Visuals::light(),
+    };
+    visuals.panel_fill = colors.bg;
+    visuals.window_fill = colors.panel;
+    visuals.extreme_bg_color = colors.bg;
+    visuals.faint_bg_color = colors.surface;
+    visuals.override_text_color = Some(colors.text);
+    visuals.selection.bg_fill = colors.surface;
+    visuals.selection.stroke = Stroke::new(1., colors.accent);
+    visuals.widgets.inactive.bg_fill = colors.surface;
+    visuals.widgets.inactive.weak_bg_fill = colors.surface;
+    visuals.widgets.inactive.bg_stroke = Stroke::new(1., colors.border);
+    visuals.widgets.hovered.bg_fill = colors.hovered;
+    visuals.widgets.hovered.bg_stroke = Stroke::new(1., colors.accent);
+    visuals.widgets.active.bg_fill = colors.active;
     style.visuals = visuals;
     style.animation_time = 0.;
     style.spacing.item_spacing = Vec2::new(8., 6.);
@@ -628,6 +778,8 @@ fn theme(ctx: &egui::Context) {
         .text_styles
         .insert(egui::TextStyle::Button, egui::FontId::proportional(13.));
     ctx.set_style(style);
+}
+fn load_fonts(ctx: &egui::Context) {
     if let Ok(bytes) = std::fs::read("C:\\Windows\\Fonts\\segoeui.ttf") {
         let mut fonts = egui::FontDefinitions::default();
         fonts
@@ -642,11 +794,15 @@ fn theme(ctx: &egui::Context) {
     }
 }
 
-fn browse_executable() -> Result<Option<PathBuf>> {
+fn browse_executable(language: Language) -> Result<Option<PathBuf>> {
     use windows_sys::Win32::UI::{Controls::Dialogs::*, Input::KeyboardAndMouse::GetActiveWindow};
     let mut filename = vec![0u16; 32768];
-    let filter: Vec<u16> = "Applications (*.exe)\0*.exe\0\0".encode_utf16().collect();
-    let title: Vec<u16> = "Choose a startup application\0".encode_utf16().collect();
+    let filter: Vec<u16> = format!("{}\0*.exe\0\0", language.text("Applications (*.exe)"))
+        .encode_utf16()
+        .collect();
+    let title: Vec<u16> = format!("{}\0", language.text("Choose a startup application"))
+        .encode_utf16()
+        .collect();
     let mut dialog: OPENFILENAMEW = unsafe { std::mem::zeroed() };
     dialog.lStructSize = std::mem::size_of::<OPENFILENAMEW>() as u32;
     dialog.hwndOwner = unsafe { GetActiveWindow() };
@@ -709,6 +865,40 @@ mod tests {
         }
         let selected = laid_out("selected", egui::vec2(1120., 760.));
         assert_eq!(selected.capture_metrics()["list"]["fully_visible_rows"], 13);
+    }
+    #[test]
+    fn every_language_and_theme_preserves_compact_list_and_settings_layout() {
+        for language in Language::ALL {
+            for theme in [Theme::Dark, Theme::Light] {
+                for screen in ["startup", "settings", "history", "error", "selected"] {
+                    let ctx = egui::Context::default();
+                    let mut desktop = Desktop::preview(&ctx, screen).unwrap();
+                    desktop.preview_preferences(&ctx, language, theme);
+                    for frame in 0..4 {
+                        let _ = ctx.run(
+                            egui::RawInput {
+                                screen_rect: Some(egui::Rect::from_min_size(
+                                    egui::Pos2::ZERO,
+                                    egui::vec2(900., 620.),
+                                )),
+                                time: Some(frame as f64 / 60.),
+                                ..Default::default()
+                            },
+                            |ctx| desktop.update(ctx),
+                        );
+                    }
+                    assert_eq!(ctx.style().visuals.dark_mode, theme == Theme::Dark);
+                    if screen == "startup" {
+                        assert_eq!(
+                            desktop.capture_metrics()["list"]["fully_visible_rows"],
+                            13,
+                            "{} {theme:?}",
+                            language.name()
+                        );
+                    }
+                }
+            }
+        }
     }
     #[test]
     fn large_inventory_only_lays_out_visible_rows() {

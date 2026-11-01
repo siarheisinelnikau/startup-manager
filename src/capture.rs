@@ -8,7 +8,14 @@ use std::{
     time::{Duration, Instant},
 };
 
-pub fn run(path: &Path, screen: &str, size: [u32; 2], scale: f32) -> Result<()> {
+pub fn run(
+    path: &Path,
+    screen: &str,
+    size: [u32; 2],
+    scale: f32,
+    language: crate::i18n::Language,
+    theme: crate::appearance::Theme,
+) -> Result<()> {
     ensure!(
         [
             "startup", "selected", "many", "settings", "empty", "error", "history"
@@ -29,6 +36,7 @@ pub fn run(path: &Path, screen: &str, size: [u32; 2], scale: f32) -> Result<()> 
     let ctx = egui::Context::default();
     ctx.set_pixels_per_point(scale);
     let mut desktop = Desktop::preview(&ctx, screen)?;
+    desktop.preview_preferences(&ctx, language, theme);
     let mut renderer = EguiSoftwareRender::new(ColorFieldOrder::Bgra);
     let width = (size[0] as f32 * scale).round() as usize;
     let height = (size[1] as f32 * scale).round() as usize;
@@ -84,7 +92,7 @@ pub fn run(path: &Path, screen: &str, size: [u32; 2], scale: f32) -> Result<()> 
             fs::write(
                 path.with_extension("json"),
                 serde_json::to_vec_pretty(
-                    &serde_json::json!({"version":crate::VERSION,"backend":"production CPU rasterizer","surface":"client area, offscreen","screen":screen,"scenario":"isolated examples of installed Windows utilities; all startup mutations disabled","physical_pixels":[width,height],"logical_size":size,"scale":scale,"frames":frame+1,"elapsed_ms":start.elapsed().as_millis(),"metrics":desktop.capture_metrics()}),
+                    &serde_json::json!({"version":crate::VERSION,"language":language.code(),"theme":theme,"backend":"production CPU rasterizer","surface":"client area, offscreen","screen":screen,"scenario":"isolated examples of installed Windows utilities; all startup mutations disabled","physical_pixels":[width,height],"logical_size":size,"scale":scale,"frames":frame+1,"elapsed_ms":start.elapsed().as_millis(),"metrics":desktop.capture_metrics()}),
                 )?,
             )?;
             return Ok(());

@@ -1,0 +1,695 @@
+{
+  "Language": [
+    "Язык",
+    "Langue",
+    "Sprache",
+    "Idioma",
+    "Lingua"
+  ],
+  "Appearance": [
+    "Оформление",
+    "Apparence",
+    "Darstellung",
+    "Apariencia",
+    "Aspetto"
+  ],
+  "Theme": [
+    "Тема",
+    "Thème",
+    "Design",
+    "Tema",
+    "Tema"
+  ],
+  "Light": [
+    "Светлая",
+    "Clair",
+    "Hell",
+    "Claro",
+    "Chiaro"
+  ],
+  "Dark": [
+    "Тёмная",
+    "Sombre",
+    "Dunkel",
+    "Oscuro",
+    "Scuro"
+  ],
+  "Changes apply immediately and are saved automatically.": [
+    "Изменения применяются сразу и сохраняются автоматически.",
+    "Les modifications sont immédiates et enregistrées automatiquement.",
+    "Änderungen werden sofort angewendet und automatisch gespeichert.",
+    "Los cambios se aplican al instante y se guardan automáticamente.",
+    "Le modifiche vengono applicate subito e salvate automaticamente."
+  ],
+  "Startup apps": [
+    "Автозагрузка",
+    "Applications au démarrage",
+    "Autostart-Apps",
+    "Aplicaciones de inicio",
+    "App di avvio"
+  ],
+  "Scheduled tasks": [
+    "Задания",
+    "Tâches planifiées",
+    "Geplante Aufgaben",
+    "Tareas programadas",
+    "Attività pianificate"
+  ],
+  "Services": [
+    "Службы",
+    "Services",
+    "Dienste",
+    "Servicios",
+    "Servizi"
+  ],
+  "Settings": [
+    "Настройки",
+    "Paramètres",
+    "Einstellungen",
+    "Configuración",
+    "Impostazioni"
+  ],
+  "History": [
+    "История",
+    "Historique",
+    "Verlauf",
+    "Historial",
+    "Cronologia"
+  ],
+  "Update available": [
+    "Доступно обновление",
+    "Mise à jour disponible",
+    "Update verfügbar",
+    "Actualización disponible",
+    "Aggiornamento disponibile"
+  ],
+  "Startup locations": [
+    "Расположения автозагрузки",
+    "Emplacements de démarrage",
+    "Autostart-Speicherorte",
+    "Ubicaciones de inicio",
+    "Posizioni di avvio"
+  ],
+  "Remove startup entry?": [
+    "Удалить запись автозагрузки?",
+    "Supprimer cette entrée de démarrage ?",
+    "Autostart-Eintrag entfernen?",
+    "¿Eliminar entrada de inicio?",
+    "Rimuovere la voce di avvio?"
+  ],
+  "Change system startup?": [
+    "Изменить системную автозагрузку?",
+    "Modifier le démarrage du système ?",
+    "Systemstart ändern?",
+    "¿Cambiar el inicio del sistema?",
+    "Modificare l’avvio del sistema?"
+  ],
+  "A backup is saved first. Removing this entry stops it from starting automatically; it does not uninstall the application.": [
+    "Сначала будет сохранена резервная копия. Удаление записи отключает автоматический запуск, но не удаляет приложение.",
+    "Une sauvegarde est créée au préalable. Supprimer cette entrée empêche son lancement automatique sans désinstaller l’application.",
+    "Zuerst wird eine Sicherung erstellt. Das Entfernen verhindert den automatischen Start, ohne die Anwendung zu deinstallieren.",
+    "Primero se crea una copia de seguridad. Eliminar esta entrada impide el inicio automático sin desinstalar la aplicación.",
+    "Prima viene salvata una copia di sicurezza. Rimuovere questa voce impedisce l’avvio automatico senza disinstallare l’applicazione."
+  ],
+  "Changing a service or system task can affect Windows features, connectivity, or security software. Review its command and purpose before continuing.": [
+    "Изменение службы или системного задания может повлиять на Windows, сеть или защиту. Проверьте команду и назначение перед продолжением.",
+    "Modifier un service ou une tâche système peut affecter Windows, le réseau ou la sécurité. Vérifiez sa commande et son rôle avant de continuer.",
+    "Änderungen an Diensten oder Systemaufgaben können Windows, Netzwerk oder Sicherheitssoftware beeinträchtigen. Prüfen Sie vorher Befehl und Zweck.",
+    "Cambiar un servicio o tarea del sistema puede afectar a Windows, la red o la seguridad. Revise su comando y función antes de continuar.",
+    "Modificare un servizio o un’attività di sistema può influire su Windows, rete o sicurezza. Verificarne comando e scopo prima di continuare."
+  ],
+  "Cancel": [
+    "Отмена",
+    "Annuler",
+    "Abbrechen",
+    "Cancelar",
+    "Annulla"
+  ],
+  "Back up and remove": [
+    "Сохранить копию и удалить",
+    "Sauvegarder et supprimer",
+    "Sichern und entfernen",
+    "Crear copia y eliminar",
+    "Salva copia e rimuovi"
+  ],
+  "Save backup and continue": [
+    "Сохранить копию и продолжить",
+    "Sauvegarder et continuer",
+    "Sichern und fortfahren",
+    "Crear copia y continuar",
+    "Salva copia e continua"
+  ],
+  "Add a startup app": [
+    "Добавить приложение в автозагрузку",
+    "Ajouter une application au démarrage",
+    "Autostart-App hinzufügen",
+    "Añadir aplicación de inicio",
+    "Aggiungi un’app di avvio"
+  ],
+  "Start an application when you sign in to this account.": [
+    "Запускать приложение при входе в эту учётную запись.",
+    "Lancer une application à la connexion à ce compte.",
+    "Eine Anwendung bei der Anmeldung mit diesem Konto starten.",
+    "Iniciar una aplicación al acceder a esta cuenta.",
+    "Avvia un’applicazione all’accesso a questo account."
+  ],
+  "Name": [
+    "Название",
+    "Nom",
+    "Name",
+    "Nombre",
+    "Nome"
+  ],
+  "Full executable path": [
+    "Полный путь к программе",
+    "Chemin complet de l’exécutable",
+    "Vollständiger Programmpfad",
+    "Ruta completa del ejecutable",
+    "Percorso completo dell’eseguibile"
+  ],
+  "Browse…": [
+    "Обзор…",
+    "Parcourir…",
+    "Durchsuchen…",
+    "Examinar…",
+    "Sfoglia…"
+  ],
+  "Add app": [
+    "Добавить",
+    "Ajouter l’application",
+    "App hinzufügen",
+    "Añadir aplicación",
+    "Aggiungi app"
+  ],
+  "History & recovery": [
+    "История и восстановление",
+    "Historique et restauration",
+    "Verlauf und Wiederherstellung",
+    "Historial y recuperación",
+    "Cronologia e ripristino"
+  ],
+  "Every change keeps its original data. Restore when you need it.": [
+    "Каждое изменение сохраняет исходные данные для восстановления.",
+    "Chaque modification conserve les données d’origine pour une restauration ultérieure.",
+    "Jede Änderung bewahrt die Originaldaten zur späteren Wiederherstellung.",
+    "Cada cambio conserva los datos originales para poder restaurarlos.",
+    "Ogni modifica conserva i dati originali per un eventuale ripristino."
+  ],
+  "Backups stay on this computer. Restore never replaces an existing startup entry.": [
+    "Копии хранятся на этом компьютере. Восстановление не заменяет существующие записи автозагрузки.",
+    "Les sauvegardes restent sur cet ordinateur. La restauration ne remplace jamais une entrée existante.",
+    "Sicherungen bleiben auf diesem Computer. Die Wiederherstellung ersetzt keine vorhandenen Autostart-Einträge.",
+    "Las copias se guardan en este equipo. Restaurar nunca reemplaza una entrada de inicio existente.",
+    "Le copie rimangono su questo computer. Il ripristino non sostituisce mai una voce di avvio esistente."
+  ],
+  "No changes yet": [
+    "Изменений пока нет",
+    "Aucune modification",
+    "Noch keine Änderungen",
+    "Aún no hay cambios",
+    "Nessuna modifica"
+  ],
+  "Your backups will appear here after you change a startup item.": [
+    "После изменения автозагрузки здесь появятся резервные копии.",
+    "Les sauvegardes apparaîtront ici après une modification du démarrage.",
+    "Nach einer Änderung am Autostart erscheinen hier die Sicherungen.",
+    "Las copias aparecerán aquí tras cambiar un elemento de inicio.",
+    "Le copie appariranno qui dopo aver modificato un elemento di avvio."
+  ],
+  "Interrupted change — inspect the original location before recovery": [
+    "Изменение прервано — проверьте исходное расположение перед восстановлением",
+    "Modification interrompue — vérifiez l’emplacement d’origine avant la restauration",
+    "Änderung unterbrochen — vor der Wiederherstellung den ursprünglichen Speicherort prüfen",
+    "Cambio interrumpido: revise la ubicación original antes de restaurar",
+    "Modifica interrotta: controllare la posizione originale prima del ripristino"
+  ],
+  "Backup available": [
+    "Копия доступна",
+    "Sauvegarde disponible",
+    "Sicherung verfügbar",
+    "Copia disponible",
+    "Copia disponibile"
+  ],
+  "Restored": [
+    "Восстановлено",
+    "Restauré",
+    "Wiederhergestellt",
+    "Restaurado",
+    "Ripristinato"
+  ],
+  "Action failed: {error}": [
+    "Ошибка действия: {error}",
+    "Échec de l’action : {error}",
+    "Aktion fehlgeschlagen: {error}",
+    "Error en la acción: {error}",
+    "Operazione non riuscita: {error}"
+  ],
+  "Restore": [
+    "Восстановить",
+    "Restaurer",
+    "Wiederherstellen",
+    "Restaurar",
+    "Ripristina"
+  ],
+  "A small utility, with updates on your terms.": [
+    "Небольшая утилита с удобным управлением обновлениями.",
+    "Un petit outil, avec des mises à jour à votre convenance.",
+    "Ein kleines Werkzeug mit Updates nach Ihren Wünschen.",
+    "Una pequeña utilidad con actualizaciones a su elección.",
+    "Una piccola utilità con aggiornamenti secondo le tue preferenze."
+  ],
+  "Updates": [
+    "Обновления",
+    "Mises à jour",
+    "Updates",
+    "Actualizaciones",
+    "Aggiornamenti"
+  ],
+  "Startup Manager  ·  Installed version {version}": [
+    "Startup Manager  ·  Установлена версия {version}",
+    "Startup Manager  ·  Version installée {version}",
+    "Startup Manager  ·  Installierte Version {version}",
+    "Startup Manager  ·  Versión instalada {version}",
+    "Startup Manager  ·  Versione installata {version}"
+  ],
+  "Check for updates on startup": [
+    "Проверять обновления при запуске",
+    "Vérifier les mises à jour au démarrage",
+    "Beim Start nach Updates suchen",
+    "Buscar actualizaciones al iniciar",
+    "Controlla aggiornamenti all’avvio"
+  ],
+  "Checks run in the background. Downloads start only when you choose.": [
+    "Проверка выполняется в фоне. Загрузка начинается только по вашему выбору.",
+    "La vérification se fait en arrière-plan. Le téléchargement démarre à votre demande.",
+    "Die Suche läuft im Hintergrund. Downloads starten nur auf Ihren Wunsch.",
+    "La búsqueda se realiza en segundo plano. Las descargas solo comienzan cuando lo decide.",
+    "Il controllo avviene in background. I download iniziano solo su tua richiesta."
+  ],
+  "Check for updates": [
+    "Проверить обновления",
+    "Rechercher des mises à jour",
+    "Nach Updates suchen",
+    "Buscar actualizaciones",
+    "Controlla aggiornamenti"
+  ],
+  "Download and install": [
+    "Скачать и установить",
+    "Télécharger et installer",
+    "Herunterladen und installieren",
+    "Descargar e instalar",
+    "Scarica e installa"
+  ],
+  "Backups & data": [
+    "Резервные копии и данные",
+    "Sauvegardes et données",
+    "Sicherungen und Daten",
+    "Copias y datos",
+    "Copie e dati"
+  ],
+  "Settings and recovery backups are stored in your local application data folder.": [
+    "Настройки и копии для восстановления хранятся в локальной папке данных приложения.",
+    "Les paramètres et sauvegardes sont stockés dans le dossier local des données de l’application.",
+    "Einstellungen und Sicherungen liegen im lokalen Anwendungsdatenordner.",
+    "La configuración y las copias se guardan en la carpeta local de datos de la aplicación.",
+    "Impostazioni e copie di ripristino sono archiviate nella cartella locale dei dati dell’applicazione."
+  ],
+  "Export startup report": [
+    "Экспортировать отчёт",
+    "Exporter le rapport de démarrage",
+    "Autostart-Bericht exportieren",
+    "Exportar informe de inicio",
+    "Esporta rapporto di avvio"
+  ],
+  "Export is disabled in demo mode.": [
+    "Экспорт недоступен в деморежиме.",
+    "L’exportation est désactivée en mode démo.",
+    "Der Export ist im Demomodus deaktiviert.",
+    "La exportación está desactivada en el modo de demostración.",
+    "L’esportazione è disabilitata in modalità demo."
+  ],
+  "Saved to {path}": [
+    "Сохранено: {path}",
+    "Enregistré dans {path}",
+    "Gespeichert unter {path}",
+    "Guardado en {path}",
+    "Salvato in {path}"
+  ],
+  "Export failed: {error}": [
+    "Ошибка экспорта: {error}",
+    "Échec de l’exportation : {error}",
+    "Export fehlgeschlagen: {error}",
+    "Error al exportar: {error}",
+    "Esportazione non riuscita: {error}"
+  ],
+  "Open source · MIT License": [
+    "Открытый код · Лицензия MIT",
+    "Code ouvert · Licence MIT",
+    "Open Source · MIT-Lizenz",
+    "Código abierto · Licencia MIT",
+    "Codice aperto · Licenza MIT"
+  ],
+  "View project on GitHub": [
+    "Открыть проект на GitHub",
+    "Voir le projet sur GitHub",
+    "Projekt auf GitHub ansehen",
+    "Ver proyecto en GitHub",
+    "Visualizza progetto su GitHub"
+  ],
+  "Ready to check for a newer version.": [
+    "Готово к проверке новой версии.",
+    "Prêt à rechercher une nouvelle version.",
+    "Bereit zur Suche nach einer neueren Version.",
+    "Listo para buscar una versión nueva.",
+    "Pronto a cercare una nuova versione."
+  ],
+  "Checking GitHub releases…": [
+    "Проверка релизов GitHub…",
+    "Recherche des versions GitHub…",
+    "GitHub-Veröffentlichungen werden geprüft…",
+    "Buscando versiones en GitHub…",
+    "Ricerca delle versioni su GitHub…"
+  ],
+  "You are using the latest version.": [
+    "Установлена последняя версия.",
+    "Vous utilisez la dernière version.",
+    "Sie verwenden die neueste Version.",
+    "Está usando la última versión.",
+    "Stai utilizzando l’ultima versione."
+  ],
+  "Version {version} is available.": [
+    "Доступна версия {version}.",
+    "La version {version} est disponible.",
+    "Version {version} ist verfügbar.",
+    "La versión {version} está disponible.",
+    "È disponibile la versione {version}."
+  ],
+  "Downloading: {received} / {total} MiB": [
+    "Загрузка: {received} / {total} МиБ",
+    "Téléchargement : {received} / {total} Mio",
+    "Download: {received} / {total} MiB",
+    "Descargando: {received} / {total} MiB",
+    "Download: {received} / {total} MiB"
+  ],
+  "Preparing to restart and install…": [
+    "Подготовка к перезапуску и установке…",
+    "Préparation du redémarrage et de l’installation…",
+    "Neustart und Installation werden vorbereitet…",
+    "Preparando reinicio e instalación…",
+    "Preparazione del riavvio e dell’installazione…"
+  ],
+  "Update check or installation failed: {error}": [
+    "Ошибка проверки или установки обновления: {error}",
+    "Échec de la recherche ou de l’installation : {error}",
+    "Update-Suche oder Installation fehlgeschlagen: {error}",
+    "Error al buscar o instalar la actualización: {error}",
+    "Controllo o installazione dell’aggiornamento non riusciti: {error}"
+  ],
+  "Update checks are disabled in demo mode.": [
+    "Проверка обновлений недоступна в деморежиме.",
+    "La recherche de mises à jour est désactivée en mode démo.",
+    "Update-Prüfungen sind im Demomodus deaktiviert.",
+    "La búsqueda de actualizaciones está desactivada en el modo de demostración.",
+    "Il controllo degli aggiornamenti è disabilitato in modalità demo."
+  ],
+  "Choose a startup application": [
+    "Выберите приложение автозагрузки",
+    "Choisir une application de démarrage",
+    "Autostart-Anwendung auswählen",
+    "Elegir una aplicación de inicio",
+    "Scegli un’applicazione di avvio"
+  ],
+  "Applications (*.exe)": [
+    "Приложения (*.exe)",
+    "Applications (*.exe)",
+    "Anwendungen (*.exe)",
+    "Aplicaciones (*.exe)",
+    "Applicazioni (*.exe)"
+  ],
+  "Close details": [
+    "Закрыть сведения",
+    "Fermer les détails",
+    "Details schließen",
+    "Cerrar detalles",
+    "Chiudi dettagli"
+  ],
+  "Remove…": [
+    "Удалить…",
+    "Supprimer…",
+    "Entfernen…",
+    "Eliminar…",
+    "Rimuovi…"
+  ],
+  "Copy details": [
+    "Копировать сведения",
+    "Copier les détails",
+    "Details kopieren",
+    "Copiar detalles",
+    "Copia dettagli"
+  ],
+  "Search name, command or location": [
+    "Поиск по названию, команде или расположению",
+    "Rechercher un nom, une commande ou un emplacement",
+    "Name, Befehl oder Speicherort suchen",
+    "Buscar nombre, comando o ubicación",
+    "Cerca nome, comando o posizione"
+  ],
+  "All states": [
+    "Все состояния",
+    "Tous les états",
+    "Alle Zustände",
+    "Todos los estados",
+    "Tutti gli stati"
+  ],
+  "Enabled": [
+    "Включено",
+    "Activé",
+    "Aktiviert",
+    "Activado",
+    "Attivo"
+  ],
+  "Disabled": [
+    "Отключено",
+    "Désactivé",
+    "Deaktiviert",
+    "Desactivado",
+    "Disattivo"
+  ],
+  "Refresh": [
+    "Обновить",
+    "Actualiser",
+    "Aktualisieren",
+    "Actualizar",
+    "Aggiorna"
+  ],
+  "+ Add app": [
+    "+ Добавить",
+    "+ Ajouter",
+    "+ App hinzufügen",
+    "+ Añadir app",
+    "+ Aggiungi app"
+  ],
+  "Notices: {count}": [
+    "Замечания: {count}",
+    "Remarques : {count}",
+    "Hinweise: {count}",
+    "Avisos: {count}",
+    "Avvisi: {count}"
+  ],
+  "Reading startup items…  ·  {count} items": [
+    "Чтение автозагрузки…  ·  Записей: {count}",
+    "Lecture du démarrage…  ·  {count} éléments",
+    "Autostart wird gelesen…  ·  {count} Einträge",
+    "Leyendo inicio…  ·  {count} elementos",
+    "Lettura avvio…  ·  {count} elementi"
+  ],
+  "Application  ·  {count} items  ·  {enabled} enabled": [
+    "Приложение  ·  Записей: {count}  ·  Включено: {enabled}",
+    "Application  ·  {count} éléments  ·  {enabled} activés",
+    "Anwendung  ·  {count} Einträge  ·  {enabled} aktiv",
+    "Aplicación  ·  {count} elementos  ·  {enabled} activos",
+    "Applicazione  ·  {count} elementi  ·  {enabled} attivi"
+  ],
+  "Source": [
+    "Источник",
+    "Source",
+    "Quelle",
+    "Origen",
+    "Origine"
+  ],
+  "Scope": [
+    "Область",
+    "Portée",
+    "Bereich",
+    "Ámbito",
+    "Ambito"
+  ],
+  "State": [
+    "Состояние",
+    "État",
+    "Zustand",
+    "Estado",
+    "Stato"
+  ],
+  "Reading startup locations…": [
+    "Чтение расположений автозагрузки…",
+    "Lecture des emplacements de démarrage…",
+    "Autostart-Speicherorte werden gelesen…",
+    "Leyendo ubicaciones de inicio…",
+    "Lettura delle posizioni di avvio…"
+  ],
+  "No matching startup items": [
+    "Подходящих записей нет",
+    "Aucun élément correspondant",
+    "Keine passenden Autostart-Einträge",
+    "No hay elementos de inicio coincidentes",
+    "Nessun elemento di avvio corrispondente"
+  ],
+  "starts automatically": [
+    "запускается автоматически",
+    "démarre automatiquement",
+    "startet automatisch",
+    "se inicia automáticamente",
+    "si avvia automaticamente"
+  ],
+  "automatic startup is off": [
+    "автозапуск отключён",
+    "démarrage automatique désactivé",
+    "automatischer Start deaktiviert",
+    "inicio automático desactivado",
+    "avvio automatico disattivato"
+  ],
+  "Disable": [
+    "Отключить",
+    "Désactiver",
+    "Deaktivieren",
+    "Desactivar",
+    "Disattiva"
+  ],
+  "Enable": [
+    "Включить",
+    "Activer",
+    "Aktivieren",
+    "Activar",
+    "Attiva"
+  ],
+  "Dismiss message": [
+    "Скрыть сообщение",
+    "Masquer le message",
+    "Meldung schließen",
+    "Cerrar mensaje",
+    "Chiudi messaggio"
+  ],
+  "Registry": [
+    "Реестр",
+    "Registre",
+    "Registrierung",
+    "Registro",
+    "Registro"
+  ],
+  "Startup folder": [
+    "Папка автозагрузки",
+    "Dossier de démarrage",
+    "Autostart-Ordner",
+    "Carpeta de inicio",
+    "Cartella di avvio"
+  ],
+  "Scheduled task": [
+    "Задание",
+    "Tâche planifiée",
+    "Geplante Aufgabe",
+    "Tarea programada",
+    "Attività pianificata"
+  ],
+  "Service": [
+    "Служба",
+    "Service",
+    "Dienst",
+    "Servicio",
+    "Servizio"
+  ],
+  "Current user": [
+    "Текущий пользователь",
+    "Utilisateur actuel",
+    "Aktueller Benutzer",
+    "Usuario actual",
+    "Utente attuale"
+  ],
+  "All users": [
+    "Все пользователи",
+    "Tous les utilisateurs",
+    "Alle Benutzer",
+    "Todos los usuarios",
+    "Tutti gli utenti"
+  ],
+  "Add": [
+    "Добавление",
+    "Ajout",
+    "Hinzufügen",
+    "Añadir",
+    "Aggiunta"
+  ],
+  "Delete": [
+    "Удаление",
+    "Suppression",
+    "Entfernen",
+    "Eliminar",
+    "Rimozione"
+  ],
+  "Finishing the current operation before closing…": [
+    "Завершение текущей операции перед закрытием…",
+    "Fin de l’opération en cours avant la fermeture…",
+    "Der aktuelle Vorgang wird vor dem Schließen abgeschlossen…",
+    "Finalizando la operación actual antes de cerrar…",
+    "Completamento dell’operazione prima della chiusura…"
+  ],
+  "Demo mode: startup entries are examples and actions are disabled.": [
+    "Деморежим: показаны примеры, действия недоступны.",
+    "Mode démo : les entrées sont des exemples et les actions sont désactivées.",
+    "Demomodus: Die Einträge sind Beispiele und Aktionen sind deaktiviert.",
+    "Modo de demostración: las entradas son ejemplos y las acciones están desactivadas.",
+    "Modalità demo: le voci sono esempi e le azioni sono disabilitate."
+  ],
+  "The worker stopped. Reopen the application to continue.": [
+    "Рабочий процесс остановился. Откройте приложение снова.",
+    "Le traitement s’est arrêté. Rouvrez l’application pour continuer.",
+    "Der Hintergrundprozess wurde beendet. Öffnen Sie die Anwendung erneut.",
+    "El proceso se detuvo. Vuelva a abrir la aplicación para continuar.",
+    "Il processo si è arrestato. Riapri l’applicazione per continuare."
+  ],
+  "Change saved. Undo is available in History.": [
+    "Изменение сохранено. Отмена доступна в истории.",
+    "Modification enregistrée. L’annulation est disponible dans l’historique.",
+    "Änderung gespeichert. Im Verlauf können Sie sie rückgängig machen.",
+    "Cambio guardado. Puede deshacerlo en el historial.",
+    "Modifica salvata. Puoi annullarla dalla cronologia."
+  ],
+  "Some all-user startup locations could not be read. Run as administrator to review protected items.": [
+    "Не удалось прочитать некоторые общие расположения автозагрузки. Запустите от имени администратора для просмотра защищённых записей.",
+    "Certains emplacements communs sont illisibles. Exécutez en tant qu’administrateur pour examiner les éléments protégés.",
+    "Einige gemeinsame Speicherorte konnten nicht gelesen werden. Starten Sie als Administrator, um geschützte Einträge zu prüfen.",
+    "No se pudieron leer algunas ubicaciones comunes. Ejecute como administrador para revisar elementos protegidos.",
+    "Alcune posizioni comuni non sono leggibili. Esegui come amministratore per controllare gli elementi protetti."
+  ],
+  "Settings could not be loaded. Defaults are in use.": [
+    "Не удалось загрузить настройки. Используются значения по умолчанию.",
+    "Impossible de charger les paramètres. Les valeurs par défaut sont utilisées.",
+    "Einstellungen konnten nicht geladen werden. Standardwerte werden verwendet.",
+    "No se pudo cargar la configuración. Se usan los valores predeterminados.",
+    "Impossibile caricare le impostazioni. Vengono usati i valori predefiniti."
+  ],
+  "Operation failed: {error}": [
+    "Ошибка операции: {error}",
+    "Échec de l’opération : {error}",
+    "Vorgang fehlgeschlagen: {error}",
+    "Error en la operación: {error}",
+    "Operazione non riuscita: {error}"
+  ],
+  "Settings could not be saved: {error}": [
+    "Не удалось сохранить настройки: {error}",
+    "Impossible d’enregistrer les paramètres : {error}",
+    "Einstellungen konnten nicht gespeichert werden: {error}",
+    "No se pudo guardar la configuración: {error}",
+    "Impossibile salvare le impostazioni: {error}"
+  ]
+}

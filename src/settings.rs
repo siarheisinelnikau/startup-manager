@@ -6,11 +6,15 @@ use std::path::{Path, PathBuf};
 #[serde(default)]
 pub struct Settings {
     pub check_on_startup: bool,
+    pub language: crate::i18n::Language,
+    pub theme: crate::appearance::Theme,
 }
 impl Default for Settings {
     fn default() -> Self {
         Self {
             check_on_startup: true,
+            language: crate::i18n::Language::default(),
+            theme: crate::appearance::Theme::default(),
         }
     }
 }
@@ -50,4 +54,33 @@ pub fn write_json(path: &Path, value: &impl Serialize) -> Result<()> {
         let _ = std::fs::remove_file(temporary);
     }
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn old_settings_keep_their_preference_and_gain_safe_appearance_defaults() {
+        let settings: Settings = serde_json::from_str(r#"{"check_on_startup":false}"#).unwrap();
+        assert!(!settings.check_on_startup);
+        assert_eq!(settings.language, crate::i18n::Language::English);
+        assert_eq!(settings.theme, crate::appearance::Theme::Dark);
+        for language in crate::i18n::Language::ALL {
+            for theme in [
+                crate::appearance::Theme::Dark,
+                crate::appearance::Theme::Light,
+            ] {
+                let settings = Settings {
+                    language,
+                    theme,
+                    check_on_startup: false,
+                };
+                let restored: Settings =
+                    serde_json::from_str(&serde_json::to_string(&settings).unwrap()).unwrap();
+                assert_eq!(restored.language, language);
+                assert_eq!(restored.theme, theme);
+                assert!(!restored.check_on_startup);
+            }
+        }
+    }
 }
