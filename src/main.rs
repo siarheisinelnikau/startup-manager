@@ -1,8 +1,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod appearance;
 mod branding;
 mod capture;
 mod engine;
+mod i18n;
 mod icon_pixels;
 mod icons;
 mod model;
@@ -37,7 +39,23 @@ fn run() -> anyhow::Result<()> {
             let scale = args.get(4).map_or(Ok(1.), |s| s.parse::<f32>())?;
             let width = args.get(5).map_or(Ok(1120), |s| s.parse::<u32>())?;
             let height = args.get(6).map_or(Ok(760), |s| s.parse::<u32>())?;
-            capture::run(std::path::Path::new(path), screen, [width, height], scale)
+            let language = i18n::Language::parse(args.get(7).map_or("en", String::as_str))
+                .ok_or_else(|| {
+                    anyhow::anyhow!("Unsupported capture language; use en, ru, fr, de, es or it")
+                })?;
+            let theme = match args.get(8).map_or("dark", String::as_str) {
+                "dark" => appearance::Theme::Dark,
+                "light" => appearance::Theme::Light,
+                _ => anyhow::bail!("Unsupported capture theme; use dark or light"),
+            };
+            capture::run(
+                std::path::Path::new(path),
+                screen,
+                [width, height],
+                scale,
+                language,
+                theme,
+            )
         }
         Some("--verify-rendering") => software::verify(
             args.get(2)

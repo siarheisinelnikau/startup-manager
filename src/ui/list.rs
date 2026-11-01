@@ -43,9 +43,14 @@ impl Columns {
         }
     }
 }
-fn status_icon(painter: &egui::Painter, rect: egui::Rect, enabled: bool) {
+fn status_icon(
+    painter: &egui::Painter,
+    rect: egui::Rect,
+    enabled: bool,
+    colors: &crate::appearance::Colors,
+) {
     let center = rect.center();
-    let stroke = Stroke::new(1.35, if enabled { TEXT } else { MUTED });
+    let stroke = Stroke::new(1.35, if enabled { colors.text } else { colors.muted });
     painter.circle_stroke(center, 6.5, stroke);
     if enabled {
         painter.add(egui::Shape::line(
@@ -99,6 +104,8 @@ impl Desktop {
             && (self.filter == 0 || entry.enabled == (self.filter == 1))
     }
     pub(super) fn details_panel(&mut self, ctx: &egui::Context) {
+        let language = self.settings.language;
+        let colors = self.settings.theme.colors();
         let entry = self
             .inventory
             .entries
@@ -113,9 +120,9 @@ impl Desktop {
             .resizable(false)
             .frame(
                 egui::Frame::new()
-                    .fill(PANEL)
+                    .fill(colors.panel)
                     .inner_margin(egui::Margin::symmetric(16, 8))
-                    .stroke(Stroke::new(1., BORDER)),
+                    .stroke(Stroke::new(1., colors.border)),
             )
             .show(ctx, |ui| {
                 ui.spacing_mut().item_spacing.y = 3.;
@@ -123,9 +130,9 @@ impl Desktop {
                     let width = (ui.available_width() - 300.).max(100.);
                     let (name_rect, _) =
                         ui.allocate_exact_size(egui::vec2(width, 28.), egui::Sense::hover());
-                    text(ui, name_rect, &entry.name, TEXT, true);
+                    text(ui, name_rect, &entry.name, colors.text, true);
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if ui.small_button("Close details").clicked() {
+                        if ui.small_button(language.text("Close details")).clicked() {
                             self.selected = None;
                         }
                         if ui
@@ -133,13 +140,16 @@ impl Desktop {
                                 !self.busy
                                     && !matches!(entry.source, Source::Service { .. })
                                     && entry.backup_id.is_none(),
-                                egui::Button::new(RichText::new("Remove…").color(DANGER)).small(),
+                                egui::Button::new(
+                                    RichText::new(language.text("Remove…")).color(colors.danger),
+                                )
+                                .small(),
                             )
                             .clicked()
                         {
                             self.confirm = Some((entry.clone(), Operation::Delete));
                         }
-                        if ui.small_button("Copy details").clicked() {
+                        if ui.small_button(language.text("Copy details")).clicked() {
                             ui.ctx().copy_text(format!(
                                 "{}\n{}\n{}",
                                 entry.name, entry.command, entry.location
@@ -152,19 +162,21 @@ impl Desktop {
                         RichText::new(&entry.command)
                             .monospace()
                             .size(12.)
-                            .color(TEXT),
+                            .color(colors.text),
                     )
                     .truncate(),
                 )
                 .on_hover_text(&entry.command);
                 ui.add(
-                    egui::Label::new(RichText::new(&entry.location).size(12.).color(MUTED))
+                    egui::Label::new(RichText::new(&entry.location).size(12.).color(colors.muted))
                         .truncate(),
                 )
                 .on_hover_text(&entry.location);
             });
     }
     pub(super) fn entries_ui(&mut self, ui: &mut egui::Ui) {
+        let language = self.settings.language;
+        let colors = self.settings.theme.colors();
         ui.horizontal(|ui| {
             let tail = if self.page == Page::Startup {
                 292.
@@ -177,40 +189,41 @@ impl Desktop {
             };
             ui.add(
                 egui::TextEdit::singleline(&mut self.query)
-                    .hint_text("Search name, command or location")
+                    .hint_text(language.text("Search name, command or location"))
                     .desired_width((ui.available_width() - tail).max(100.)),
             );
             egui::ComboBox::from_id_salt("state")
-                .selected_text(["All states", "Enabled", "Disabled"][self.filter as usize])
+                .selected_text(
+                    [
+                        language.text("All states"),
+                        language.text("Enabled"),
+                        language.text("Disabled"),
+                    ][self.filter as usize],
+                )
                 .width(94.)
                 .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut self.filter, 0, "All states");
-                    ui.selectable_value(&mut self.filter, 1, "Enabled");
-                    ui.selectable_value(&mut self.filter, 2, "Disabled");
+                    ui.selectable_value(&mut self.filter, 0, language.text("All states"));
+                    ui.selectable_value(&mut self.filter, 1, language.text("Enabled"));
+                    ui.selectable_value(&mut self.filter, 2, language.text("Disabled"));
                 });
             if ui
-                .add_enabled(!self.busy, egui::Button::new("Refresh"))
+                .add_enabled(!self.busy, egui::Button::new(language.text("Refresh")))
                 .clicked()
             {
                 self.send(Command::Scan);
             }
             if self.page == Page::Startup
                 && ui
-                    .add_enabled(!self.busy, egui::Button::new("+ Add app"))
+                    .add_enabled(!self.busy, egui::Button::new(language.text("+ Add app")))
                     .clicked()
             {
                 self.add_open = true;
             }
             if !self.inventory.warnings.is_empty()
                 && ui
-                    .button(format!(
-                        "{} notice{}",
-                        self.inventory.warnings.len(),
-                        if self.inventory.warnings.len() == 1 {
-                            ""
-                        } else {
-                            "s"
-                        }
+                    .button(language.format(
+                        "Notices: {count}",
+                        &[("count", self.inventory.warnings.len().to_string())],
                     ))
                     .clicked()
             {
@@ -241,25 +254,49 @@ impl Desktop {
             egui::vec2(ui.available_width(), HEADER_HEIGHT),
             egui::Sense::hover(),
         );
-        ui.painter().rect_filled(header, 0., PANEL);
+        ui.painter().rect_filled(header, 0., colors.panel);
         let columns = Columns::new(egui::Rect::from_min_max(
             header.min + egui::vec2(8., 0.),
             header.max - egui::vec2(scrollbar + 8., 0.),
         ));
         let title = if self.busy {
-            format!("Reading startup items…  ·  {} items", indices.len())
+            language.format(
+                "Reading startup items…  ·  {count} items",
+                &[("count", indices.len().to_string())],
+            )
         } else {
-            format!(
-                "Application  ·  {} items  ·  {enabled} enabled",
-                indices.len()
+            language.format(
+                "Application  ·  {count} items  ·  {enabled} enabled",
+                &[
+                    ("count", indices.len().to_string()),
+                    ("enabled", enabled.to_string()),
+                ],
             )
         };
         let header_name =
             egui::Rect::from_min_max(columns.name.min + egui::vec2(30., 0.), columns.name.max);
-        text(ui, header_name, title, MUTED, false);
-        text(ui, columns.source, "Source", MUTED, false);
-        text(ui, columns.scope, "Scope", MUTED, false);
-        text(ui, columns.state, "State", MUTED, false);
+        text(ui, header_name, title, colors.muted, false);
+        text(
+            ui,
+            columns.source,
+            language.text("Source"),
+            colors.muted,
+            false,
+        );
+        text(
+            ui,
+            columns.scope,
+            language.text("Scope"),
+            colors.muted,
+            false,
+        );
+        text(
+            ui,
+            columns.state,
+            language.text("State"),
+            colors.muted,
+            false,
+        );
         self.list_metrics = ListMetrics {
             total_rows: indices.len(),
             fully_visible_rows: 0,
@@ -284,9 +321,9 @@ impl Desktop {
                     if indices.is_empty() {
                         ui.add_space(24.);
                         ui.label(if self.busy {
-                            "Reading startup locations…"
+                            language.text("Reading startup locations…")
                         } else {
-                            "No matching startup items"
+                            language.text("No matching startup items")
                         });
                     }
                     for row in rows {
@@ -298,13 +335,13 @@ impl Desktop {
                         );
                         let selected = self.selected.as_ref() == Some(&entry.id);
                         let fill = if selected {
-                            SURFACE
+                            colors.surface
                         } else if ui.rect_contains_pointer(rect) {
-                            Color32::from_rgb(29, 33, 41)
+                            colors.hovered
                         } else if row % 2 == 0 {
-                            Color32::from_rgb(21, 24, 30)
+                            colors.row
                         } else {
-                            BG
+                            colors.bg
                         };
                         ui.painter().rect_filled(rect, 0., fill);
                         let columns = Columns::new(rect.shrink2(egui::vec2(8., 0.)));
@@ -323,7 +360,7 @@ impl Desktop {
                             ui.painter().rect_stroke(
                                 icon_rect.shrink(2.),
                                 2.,
-                                Stroke::new(1., MUTED),
+                                Stroke::new(1., colors.muted),
                                 egui::StrokeKind::Inside,
                             );
                             ui.painter().line_segment(
@@ -331,7 +368,7 @@ impl Desktop {
                                     icon_rect.left_top() + egui::vec2(2., 7.),
                                     icon_rect.right_top() + egui::vec2(-2., 7.),
                                 ],
-                                Stroke::new(1., MUTED),
+                                Stroke::new(1., colors.muted),
                             );
                         }
                         let name = egui::Rect::from_min_max(
@@ -339,15 +376,31 @@ impl Desktop {
                             columns.name.max,
                         );
                         // Register selection after these label UIs so their hover areas do not swallow row clicks.
-                        let name_response = text(ui, name, &entry.name, TEXT, selected)
+                        let name_response = text(ui, name, &entry.name, colors.text, selected)
                             .on_hover_text(format!("{}\n{}", entry.name, entry.command));
                         if row == 0 {
                             self.list_metrics.first_name_left = Some(name_response.rect.left());
                         }
-                        text(ui, columns.source, entry.source_name(), MUTED, false);
-                        text(ui, columns.scope, &entry.scope, MUTED, false);
-                        status_icon(ui.painter(), columns.state, entry.enabled);
-                        let state = if entry.enabled { "Enabled" } else { "Disabled" };
+                        text(
+                            ui,
+                            columns.source,
+                            language.text(entry.source_name()),
+                            colors.muted,
+                            false,
+                        );
+                        text(
+                            ui,
+                            columns.scope,
+                            language.text(&entry.scope),
+                            colors.muted,
+                            false,
+                        );
+                        status_icon(ui.painter(), columns.state, entry.enabled, &colors);
+                        let state = if entry.enabled {
+                            language.text("Enabled")
+                        } else {
+                            language.text("Disabled")
+                        };
                         let selection_rect = egui::Rect::from_min_max(
                             rect.min,
                             egui::pos2(columns.action.left() - 4., rect.bottom()),
@@ -362,9 +415,9 @@ impl Desktop {
                                 format!(
                                     "{state} — {}",
                                     if entry.enabled {
-                                        "starts automatically"
+                                        language.text("starts automatically")
                                     } else {
-                                        "automatic startup is off"
+                                        language.text("automatic startup is off")
                                     }
                                 )
                             } else {
@@ -374,14 +427,17 @@ impl Desktop {
                             ui.painter().rect_stroke(
                                 selection_rect.shrink(1.),
                                 2.,
-                                Stroke::new(1., ACCENT),
+                                Stroke::new(1., colors.accent),
                                 egui::StrokeKind::Inside,
                             );
                         }
-                        let button =
-                            egui::Button::new(if entry.enabled { "Disable" } else { "Enable" })
-                                .frame(false)
-                                .min_size(egui::vec2(70., 28.));
+                        let button = egui::Button::new(if entry.enabled {
+                            language.text("Disable")
+                        } else {
+                            language.text("Enable")
+                        })
+                        .frame(false)
+                        .min_size(egui::vec2(70., 28.));
                         let button_rect = egui::Rect::from_center_size(
                             columns.action.center(),
                             egui::vec2(70., 28.),
@@ -392,7 +448,11 @@ impl Desktop {
                             }
                             let label = format!(
                                 "{} {}",
-                                if entry.enabled { "Disable" } else { "Enable" },
+                                if entry.enabled {
+                                    language.text("Disable")
+                                } else {
+                                    language.text("Enable")
+                                },
                                 entry.name
                             );
                             let response = ui.put(button_rect, button).on_hover_text(&label);
@@ -415,14 +475,14 @@ impl Desktop {
                                             button_rect.bottom() - 5.,
                                         ),
                                     ],
-                                    Stroke::new(1., MUTED),
+                                    Stroke::new(1., colors.muted),
                                 );
                             }
                             if response.has_focus() {
                                 ui.painter().rect_stroke(
                                     button_rect,
                                     3.,
-                                    Stroke::new(1., ACCENT),
+                                    Stroke::new(1., colors.accent),
                                     egui::StrokeKind::Inside,
                                 );
                             }
@@ -465,19 +525,22 @@ impl Desktop {
         }
     }
     pub(super) fn message_ui(&mut self, ui: &mut egui::Ui) {
+        let language = self.settings.language;
+        let colors = self.settings.theme.colors();
         let Some((error, message)) = self.message.clone() else {
             return;
         };
         ui.horizontal(|ui| {
-            let color = if error { DANGER } else { MUTED };
+            let color = if error { colors.danger } else { colors.muted };
             let (rect, _) = ui.allocate_exact_size(
                 egui::vec2(ui.available_width() - 38., 24.),
                 egui::Sense::hover(),
             );
-            text(ui, rect, &message, color, false).on_hover_text(&message);
+            text(ui, rect, language.text(&message), color, false)
+                .on_hover_text(language.text(&message));
             if ui
                 .small_button("×")
-                .on_hover_text("Dismiss message")
+                .on_hover_text(language.text("Dismiss message"))
                 .clicked()
             {
                 self.message = None;
