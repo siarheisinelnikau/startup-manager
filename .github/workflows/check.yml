@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: siarheisinelnikau/rust-auto-updator
-          ref: v0.1.0
+          ref: fc80a2648754b450f48255d64187cf7b13e18588
           path: rust-auto-updator
       - uses: dtolnay/rust-toolchain@stable
         with:
