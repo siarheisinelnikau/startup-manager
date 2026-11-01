@@ -61,7 +61,7 @@ Settings captured in isolated demo mode; network requests and installation are d
 
 ## Build
 
-Windows x64 and Rust 1.95 or newer are required. Rust 1.96.1 was exercised. Place the shared library beside this project:
+Windows x64 and Rust 1.95 or newer are required. Rust 1.99.1 was exercised. Place the shared library beside this project:
 
 ```text
 workspace/
