@@ -436,7 +436,8 @@ fn raster(icon: windows_sys::Win32::UI::WindowsAndMessaging::HICON) -> Option<Ve
         SelectObject(dc, previous);
         DeleteObject(bitmap);
         DeleteDC(dc);
-        (black_ok && white_ok && rgba.chunks_exact(4).any(|pixel| pixel[3] != 0)).then_some(rgba)
+        (black_ok && white_ok && rgba.as_chunks::<4>().0.iter().any(|pixel| pixel[3] != 0))
+            .then_some(rgba)
     }
 }
 fn fallback() -> Pixels {
@@ -477,7 +478,19 @@ mod tests {
         let icon = extract(&path, false).expect("Windows executable icon");
         assert!(icon.resolved);
         assert_eq!(icon.rgba.len(), SIZE * SIZE * 4);
-        assert!(icon.rgba.chunks_exact(4).any(|pixel| pixel[3] > 0));
-        assert!(icon.rgba.chunks_exact(4).any(|pixel| pixel[3] == 0));
+        assert!(
+            icon.rgba
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .any(|pixel| pixel[3] > 0)
+        );
+        assert!(
+            icon.rgba
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .any(|pixel| pixel[3] == 0)
+        );
     }
 }

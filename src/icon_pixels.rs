@@ -79,10 +79,15 @@ mod tests {
     fn icon_has_visible_artwork_and_transparent_padding_at_every_native_size() {
         for size in SIZES {
             let image = rgba(size);
-            let visible = image.chunks_exact(4).filter(|p| p[3] == 255).count();
+            let visible = image
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .filter(|p| p[3] == 255)
+                .count();
             assert!(visible > (size * size / 3) as usize);
             assert_eq!(image[3], 0);
-            assert!(image.chunks_exact(4).any(|p| p == [224, 231, 244, 255]));
+            assert!(image.as_chunks::<4>().0.contains(&[224, 231, 244, 255]));
         }
         assert_eq!(&ico()[..6], &[0, 0, 1, 0, 7, 0]);
     }
