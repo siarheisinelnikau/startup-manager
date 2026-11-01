@@ -3,19 +3,19 @@ use std::{collections::BTreeMap, sync::OnceLock};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Language {
-    #[default]
-    #[serde(rename = "en")]
-    English,
     #[serde(rename = "ru")]
-    Russian,
+    Russian = 1,
     #[serde(rename = "fr")]
-    French,
+    French = 2,
     #[serde(rename = "de")]
-    German,
+    German = 3,
     #[serde(rename = "es")]
-    Spanish,
+    Spanish = 4,
     #[serde(rename = "it")]
-    Italian,
+    Italian = 5,
+    #[default]
+    #[serde(rename = "en", other)]
+    English = 0,
 }
 
 impl Language {

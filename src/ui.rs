@@ -392,9 +392,9 @@ impl Desktop {
                     egui::ScrollArea::vertical()
                         .max_height(300.)
                         .show(ui, |ui| {
-                            for warning in &self.inventory.warnings {
-                                ui.label(warning);
-                            }
+                            ui.label(language.text("Some all-user startup locations could not be read. Run as administrator to review protected items."));
+                            ui.add_space(10.);
+                            for warning in &self.inventory.warnings { ui.label(warning); }
                         });
                 });
         }

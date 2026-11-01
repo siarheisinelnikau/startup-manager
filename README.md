@@ -25,13 +25,21 @@ This is an on-demand management window. Closing exits the application; it does n
 
 ## Everyday use
 
-1. Open `StartupManager-v0.1.2.exe`. Use **Disable** or **Enable** directly in an application's row.
+1. Open `StartupManager-v0.2.0.exe`. Use **Disable** or **Enable** directly in an application's row.
 2. Select an entry to inspect its command/location and access **Copy details** or **Remove…**. **Close details** gives the entire list its height again.
 3. Use **History → Restore** to undo a recorded change. Location notices open from the compact toolbar without taking permanent space from the list.
 
 ![Selected startup entry with its original command and recovery-backed removal](docs/screenshots/selected.png)
 
 For protected tasks, all-user registry values and service changes, start the application with Windows' **Run as administrator**. Access failures are shown inline; the app does not silently elevate.
+
+## Language and appearance
+
+Open **Settings → Appearance** to select **English**, **Русский**, **Français**, **Deutsch**, **Español**, or **Italiano**, and choose **Light** or **Dark**. Changes apply immediately and save automatically. English and the existing dark appearance remain the defaults for older settings files; existing update preferences and recovery data are preserved.
+
+Navigation, lists, filters, history, confirmations, the executable picker and update controls follow the selected language. Application names, commands, paths, downloaded release notes and detailed operating-system diagnostics retain their original content. Search also recognizes translated source/scope names. Interface rendering remains event driven; changing a preference does not add a timer or background redraw loop.
+
+![Russian startup list in the light theme, rendered by the actual application](docs/screenshots/startup-ru-light.png)
 
 ## Recovery
 
@@ -49,7 +57,7 @@ The updater selects `StartupManager-vVERSION.exe` and `SHA256SUMS.txt` from this
 
 ![Settings with version, startup-check preference and update action](docs/screenshots/settings.png)
 
-Settings captured in isolated demo mode; network requests and installation are deliberately disabled in that mode. The repository and first release still need publication before online updates can find this application.
+Settings captured in isolated demo mode; network requests and installation are deliberately disabled in that mode. Online checks require a published release in the canonical repository.
 
 ## Build
 
@@ -68,27 +76,29 @@ cargo test --locked
 ./scripts/package.ps1
 ```
 
-Use `./scripts/package.ps1 -Offline` when dependencies are already cached. The release links the C runtime statically and produces `dist/StartupManager-v0.1.2.exe`, `SHA256SUMS.txt`, the MIT license and third-party notices. CI checks out the library at `v0.1.0`; publish that repository/tag before enabling consumer CI.
+Use `./scripts/package.ps1 -Offline` when dependencies are already cached. The release links the C runtime statically and produces `dist/StartupManager-v0.2.0.exe`, `SHA256SUMS.txt`, the MIT license and third-party notices. CI checks out the shared updater at its pinned commit.
 
-Refresh dependency license attribution with `python scripts/notices.py`. See [verification](docs/VERIFICATION.md) for completed checks and precise limitations.
+Refresh dependency license attribution with `python scripts/notices.py`. See [verification](docs/VERIFICATION-v0.2.0.md) for completed checks and precise limitations.
 
 ## Developer diagnostics
 
 ```powershell
 # Read-only inventory; output may include local commands and account paths.
-./dist/StartupManager-v0.1.2.exe --inventory
+./dist/StartupManager-v0.2.0.exe --inventory
 
 # Production UI and rasterizer, bounded render-save-exit, isolated example data.
-./dist/StartupManager-v0.1.2.exe --capture E:\captures\startup.png startup
-./dist/StartupManager-v0.1.2.exe --capture E:\captures\settings.png settings
-./dist/StartupManager-v0.1.2.exe --capture E:\captures\compact.png startup 1 900 620
+./dist/StartupManager-v0.2.0.exe --capture E:\captures\startup.png startup
+./dist/StartupManager-v0.2.0.exe --capture E:\captures\settings.png settings
+./dist/StartupManager-v0.2.0.exe --capture E:\captures\compact.png startup 1 900 620
 
 # Finite native visible/settings/hidden/restore test with counters and CPU samples.
-./dist/StartupManager-v0.1.2.exe --verify-rendering E:\captures\rendering.json
+./dist/StartupManager-v0.2.0.exe --verify-rendering E:\captures\rendering.json
 
 # Explicit OS integration test: one disposable scheduled task, with no triggers.
 cargo test native_task_enable_undo_delete_restore_and_conflict_check -- --ignored
 ```
+
+Append a language code (`en`, `ru`, `fr`, `de`, `es`, `it`) and theme (`dark`, `light`) after the dimensions to render a localized state, for example `--capture E:\captures\settings-fr.png settings 1 1120 760 fr light`. These arguments affect only the isolated capture, never saved preferences.
 
 Capture screens are `startup`, `selected`, `many` (500 rows), `settings`, `empty`, `error`, and `history`. Optional arguments are scale, logical width and logical height. PNG sidecars record the version, dimensions, scale, frame count, visible-row geometry, resolved icon count and capture scope. Diagnostic modes do not read or save ordinary application preferences and never modify real startup entries.
 
