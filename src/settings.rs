@@ -65,6 +65,13 @@ mod tests {
         assert!(!settings.check_on_startup);
         assert_eq!(settings.language, crate::i18n::Language::English);
         assert_eq!(settings.theme, crate::appearance::Theme::Dark);
+        let future: Settings = serde_json::from_str(
+            r#"{"check_on_startup":false,"language":"unknown","theme":"unknown"}"#,
+        )
+        .unwrap();
+        assert!(!future.check_on_startup);
+        assert_eq!(future.language, crate::i18n::Language::English);
+        assert_eq!(future.theme, crate::appearance::Theme::Dark);
         for language in crate::i18n::Language::ALL {
             for theme in [
                 crate::appearance::Theme::Dark,

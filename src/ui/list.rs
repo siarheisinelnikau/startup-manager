@@ -19,7 +19,8 @@ struct Columns {
 }
 impl Columns {
     fn new(rect: egui::Rect) -> Self {
-        let action = egui::Rect::from_min_max(egui::pos2(rect.right() - 78., rect.top()), rect.max);
+        let action =
+            egui::Rect::from_min_max(egui::pos2(rect.right() - 116., rect.top()), rect.max);
         let state = egui::Rect::from_min_max(
             egui::pos2(action.left() - 50., rect.top()),
             egui::pos2(action.left() - 8., rect.bottom()),
@@ -100,7 +101,19 @@ impl Desktop {
     }
     fn entry_visible(&self, entry: &Entry) -> bool {
         Some(entry.category()) == self.category()
-            && entry.matches(&self.query)
+            && (entry.matches(&self.query)
+                || self
+                    .settings
+                    .language
+                    .text(&entry.scope)
+                    .to_lowercase()
+                    .contains(&self.query.to_lowercase())
+                || self
+                    .settings
+                    .language
+                    .text(entry.source_name())
+                    .to_lowercase()
+                    .contains(&self.query.to_lowercase()))
             && (self.filter == 0 || entry.enabled == (self.filter == 1))
     }
     pub(super) fn details_panel(&mut self, ctx: &egui::Context) {
@@ -178,15 +191,34 @@ impl Desktop {
         let language = self.settings.language;
         let colors = self.settings.theme.colors();
         ui.horizontal(|ui| {
-            let tail = if self.page == Page::Startup {
-                292.
-            } else {
-                200.
-            } + if self.inventory.warnings.is_empty() {
-                0.
-            } else {
-                92.
+            let font = egui::TextStyle::Button.resolve(ui.style());
+            let label_width = |text: &str| {
+                ui.painter()
+                    .layout_no_wrap(text.into(), font.clone(), colors.text)
+                    .size()
+                    .x
             };
+            let state_width = ["All states", "Enabled", "Disabled"]
+                .map(|label| label_width(language.text(label)))
+                .into_iter()
+                .fold(94., f32::max)
+                + 24.;
+            let padding = ui.spacing().button_padding.x * 2.;
+            let mut tail = state_width
+                + label_width(language.text("Refresh"))
+                + padding
+                + ui.spacing().item_spacing.x * 3.;
+            if self.page == Page::Startup {
+                tail +=
+                    label_width(language.text("+ Add app")) + padding + ui.spacing().item_spacing.x;
+            }
+            if !self.inventory.warnings.is_empty() {
+                tail += label_width(&language.format(
+                    "Notices: {count}",
+                    &[("count", self.inventory.warnings.len().to_string())],
+                )) + padding
+                    + ui.spacing().item_spacing.x;
+            }
             ui.add(
                 egui::TextEdit::singleline(&mut self.query)
                     .hint_text(language.text("Search name, command or location"))
@@ -200,7 +232,7 @@ impl Desktop {
                         language.text("Disabled"),
                     ][self.filter as usize],
                 )
-                .width(94.)
+                .width(state_width)
                 .show_ui(ui, |ui| {
                     ui.selectable_value(&mut self.filter, 0, language.text("All states"));
                     ui.selectable_value(&mut self.filter, 1, language.text("Enabled"));
@@ -437,10 +469,10 @@ impl Desktop {
                             language.text("Enable")
                         })
                         .frame(false)
-                        .min_size(egui::vec2(70., 28.));
+                        .min_size(egui::vec2(108., 28.));
                         let button_rect = egui::Rect::from_center_size(
                             columns.action.center(),
-                            egui::vec2(70., 28.),
+                            egui::vec2(108., 28.),
                         );
                         ui.push_id(("startup-action", &entry.id), |ui| {
                             if self.busy {
