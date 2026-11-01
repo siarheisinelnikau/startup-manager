@@ -1,4 +1,7 @@
-use crate::{appearance::Theme, i18n::Language};
+use crate::{
+    appearance::Theme,
+    i18n::{Language, Message},
+};
 use crate::{
     engine::Engine,
     model::{self, Backup, Entry, Inventory, Operation, Source, Status},
@@ -89,7 +92,7 @@ pub struct Desktop {
     updates: Controller,
     worker: Option<Worker>,
     busy: bool,
-    message: Option<(bool, String)>,
+    message: Option<(bool, Message)>,
     preview: bool,
     exit: bool,
     closing: bool,
@@ -98,7 +101,7 @@ pub struct Desktop {
     add_open: bool,
     add_name: String,
     add_path: String,
-    export_message: Option<String>,
+    export_message: Option<Message>,
     icons: crate::icons::ApplicationIcons,
     warnings_open: bool,
     list_metrics: list::ListMetrics,
@@ -113,9 +116,9 @@ impl Desktop {
         let message = loaded.as_ref().err().map(|e| {
             (
                 true,
-                format!(
-                    "{}: {e}",
-                    Language::English.text("Settings could not be loaded. Defaults are in use.")
+                Message::formatted(
+                    "Settings could not be loaded. Defaults are in use. {error}",
+                    &[("error", e.to_string())],
                 ),
             )
         });
@@ -270,9 +273,10 @@ impl Desktop {
                     Ok(()) => None,
                     Err(error) => Some((
                         true,
-                        self.settings
-                            .language
-                            .format("Operation failed: {error}", &[("error", error.to_string())]),
+                        Message::formatted(
+                            "Operation failed: {error}",
+                            &[("error", error.to_string())],
+                        ),
                     )),
                 };
                 match response.inventory {
@@ -283,7 +287,7 @@ impl Desktop {
                     Err(error) => {
                         self.message = Some((
                             true,
-                            self.settings.language.format(
+                            Message::formatted(
                                 "Operation failed: {error}",
                                 &[("error", error.to_string())],
                             ),
@@ -295,7 +299,7 @@ impl Desktop {
                     Err(error) => {
                         self.message = Some((
                             true,
-                            self.settings.language.format(
+                            Message::formatted(
                                 "Operation failed: {error}",
                                 &[("error", error.to_string())],
                             ),
@@ -444,7 +448,7 @@ impl Desktop {
                             Err(error) => {
                                 self.message = Some((
                                     true,
-                                    self.settings.language.format(
+                                    Message::formatted(
                                         "Operation failed: {error}",
                                         &[("error", error.to_string())],
                                     ),
@@ -558,7 +562,7 @@ impl Desktop {
             {
                 self.message = Some((
                     true,
-                    self.settings.language.format(
+                    Message::formatted(
                         "Settings could not be saved: {error}",
                         &[("error", error.to_string())],
                     ),
@@ -590,7 +594,7 @@ impl Desktop {
                 {
                     self.message = Some((
                         true,
-                        language.format(
+                        Message::formatted(
                             "Settings could not be saved: {error}",
                             &[("error", e.to_string())],
                         ),
@@ -669,24 +673,24 @@ impl Desktop {
         ui.add_space(12.);
         if ui.button(language.text("Export startup report")).clicked() {
             if self.preview {
-                self.export_message =
-                    Some(language.text("Export is disabled in demo mode.").into());
+                self.export_message = Some("Export is disabled in demo mode.".into());
             } else {
                 let path = settings::directory()
                     .join(format!("startup-report-{}.json", rust_auto_updator::now()));
                 self.export_message = Some(match settings::write_json(&path, &self.inventory) {
-                    Ok(()) => {
-                        language.format("Saved to {path}", &[("path", path.display().to_string())])
-                    }
+                    Ok(()) => Message::formatted(
+                        "Saved to {path}",
+                        &[("path", path.display().to_string())],
+                    ),
                     Err(e) => {
-                        language.format("Export failed: {error}", &[("error", e.to_string())])
+                        Message::formatted("Export failed: {error}", &[("error", e.to_string())])
                     }
                 });
             }
         }
         if let Some(text) = &self.export_message {
             ui.label(
-                RichText::new(language.text(text))
+                RichText::new(text.render(language))
                     .size(12.)
                     .color(colors.muted),
             );
@@ -746,6 +750,10 @@ fn format_time(timestamp: u64) -> String {
     )
 }
 fn theme(ctx: &egui::Context, selected: Theme) {
+    ctx.send_viewport_cmd(egui::ViewportCommand::SetTheme(match selected {
+        Theme::Dark => egui::SystemTheme::Dark,
+        Theme::Light => egui::SystemTheme::Light,
+    }));
     let colors = selected.colors();
     let mut style = egui::Style::default();
     let mut visuals = match selected {
@@ -867,6 +875,48 @@ mod tests {
         assert_eq!(selected.capture_metrics()["list"]["fully_visible_rows"], 13);
     }
     #[test]
+    fn cached_errors_and_export_results_follow_language_changes() {
+        let ctx = egui::Context::default();
+        let mut desktop = Desktop::preview(&ctx, "startup").unwrap();
+        desktop.message = Some((
+            true,
+            Message::formatted(
+                "Operation failed: {error}",
+                &[("error", "Access denied: C:\\Apps\\{name}.exe".into())],
+            ),
+        ));
+        desktop.export_message = Some(Message::formatted(
+            "Saved to {path}",
+            &[("path", "C:\\Русский\\report.json".into())],
+        ));
+        for (language, error_prefix, saved_prefix) in [
+            (Language::Russian, "Ошибка операции:", "Сохранено:"),
+            (
+                Language::French,
+                "Échec de l’opération :",
+                "Enregistré dans",
+            ),
+            (Language::English, "Operation failed:", "Saved to"),
+        ] {
+            desktop.preview_preferences(&ctx, language, Theme::Light);
+            let error = desktop
+                .message
+                .as_ref()
+                .unwrap()
+                .1
+                .render(desktop.settings.language);
+            assert!(error.starts_with(error_prefix), "{error}");
+            assert!(error.ends_with("Access denied: C:\\Apps\\{name}.exe"));
+            let exported = desktop
+                .export_message
+                .as_ref()
+                .unwrap()
+                .render(desktop.settings.language);
+            assert!(exported.starts_with(saved_prefix), "{exported}");
+            assert!(exported.ends_with("C:\\Русский\\report.json"));
+        }
+    }
+    #[test]
     fn every_language_and_theme_preserves_compact_list_and_settings_layout() {
         for language in Language::ALL {
             for theme in [Theme::Dark, Theme::Light] {
@@ -981,7 +1031,7 @@ mod tests {
             desktop
                 .message
                 .as_ref()
-                .is_some_and(|(_, text)| text.starts_with("Demo mode:")),
+                .is_some_and(|(_, text)| text.render(Language::English).starts_with("Demo mode:")),
             "The inline action must reach the isolated command dispatcher"
         );
     }

@@ -562,14 +562,14 @@ impl Desktop {
         let Some((error, message)) = self.message.clone() else {
             return;
         };
+        let message = message.render(language);
         ui.horizontal(|ui| {
             let color = if error { colors.danger } else { colors.muted };
             let (rect, _) = ui.allocate_exact_size(
                 egui::vec2(ui.available_width() - 38., 24.),
                 egui::Sense::hover(),
             );
-            text(ui, rect, language.text(&message), color, false)
-                .on_hover_text(language.text(&message));
+            text(ui, rect, &message, color, false).on_hover_text(&message);
             if ui
                 .small_button("×")
                 .on_hover_text(language.text("Dismiss message"))

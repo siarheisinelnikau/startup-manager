@@ -78,6 +78,29 @@ impl Language {
     }
 }
 
+/// Keep source messages and literal values until rendering so cached results follow live language changes.
+#[derive(Clone, Debug)]
+pub enum Message {
+    Text(String),
+    Formatted(&'static str, Vec<(&'static str, String)>),
+}
+impl Message {
+    pub fn formatted(english: &'static str, values: &[(&'static str, String)]) -> Self {
+        Self::Formatted(english, values.to_vec())
+    }
+    pub fn render(&self, language: Language) -> String {
+        match self {
+            Self::Text(english) => language.text(english).into(),
+            Self::Formatted(english, values) => language.format(english, values),
+        }
+    }
+}
+impl From<&str> for Message {
+    fn from(value: &str) -> Self {
+        Self::Text(value.into())
+    }
+}
+
 fn catalog() -> &'static BTreeMap<String, [String; 5]> {
     static CATALOG: OnceLock<BTreeMap<String, [String; 5]>> = OnceLock::new();
     CATALOG.get_or_init(|| {

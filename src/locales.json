@@ -691,5 +691,12 @@
     "Einstellungen konnten nicht gespeichert werden: {error}",
     "No se pudo guardar la configuración: {error}",
     "Impossibile salvare le impostazioni: {error}"
+  ],
+  "Settings could not be loaded. Defaults are in use. {error}": [
+    "Не удалось загрузить настройки. Используются значения по умолчанию. {error}",
+    "Impossible de charger les paramètres. Les valeurs par défaut sont utilisées. {error}",
+    "Einstellungen konnten nicht geladen werden. Standardwerte werden verwendet. {error}",
+    "No se pudo cargar la configuración. Se usan los valores predeterminados. {error}",
+    "Impossibile caricare le impostazioni. Vengono usati i valori predefiniti. {error}"
   ]
 }
