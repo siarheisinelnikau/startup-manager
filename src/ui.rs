@@ -574,7 +574,7 @@ impl Desktop {
         ui.add_space(24.);
         egui::Frame::new()
             .fill(colors.panel)
-            .stroke(Stroke::new(1., colors.border))
+            .stroke(Stroke::new(1.0_f32, colors.border))
             .corner_radius(10)
             .inner_margin(24)
             .show(ui, |ui| {
@@ -772,12 +772,12 @@ fn theme(ctx: &egui::Context, selected: Theme) {
     visuals.faint_bg_color = colors.surface;
     visuals.override_text_color = Some(colors.text);
     visuals.selection.bg_fill = colors.surface;
-    visuals.selection.stroke = Stroke::new(1., colors.accent);
+    visuals.selection.stroke = Stroke::new(1.0_f32, colors.accent);
     visuals.widgets.inactive.bg_fill = colors.surface;
     visuals.widgets.inactive.weak_bg_fill = colors.surface;
-    visuals.widgets.inactive.bg_stroke = Stroke::new(1., colors.border);
+    visuals.widgets.inactive.bg_stroke = Stroke::new(1.0_f32, colors.border);
     visuals.widgets.hovered.bg_fill = colors.hovered;
-    visuals.widgets.hovered.bg_stroke = Stroke::new(1., colors.accent);
+    visuals.widgets.hovered.bg_stroke = Stroke::new(1.0_f32, colors.accent);
     visuals.widgets.active.bg_fill = colors.active;
     style.visuals = visuals;
     style.animation_time = 0.;
