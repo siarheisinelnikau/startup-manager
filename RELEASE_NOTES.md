@@ -11,7 +11,8 @@ Interface localization and a light appearance, with existing settings and recove
 ## Improved
 
 - Save language/theme automatically while preserving existing startup-update preferences and backup data. Unknown future preference values fall back safely.
-- Give translated row actions and toolbar controls enough space without losing compact list capacity or virtualization.
+- Give translated row actions, columns, detail controls and toolbar controls enough space without losing compact list capacity or virtualization.
+- Keep the selected appearance when Windows reports an opposite system theme.
 - Add isolated capture language/theme arguments for verifying the actual application without touching normal preferences.
 
 ## Verification and download
