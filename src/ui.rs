@@ -383,7 +383,9 @@ impl Desktop {
             )
             .show(ctx, |ui| match self.page {
                 Page::Settings => {
-                    egui::ScrollArea::vertical().show(ui, |ui| self.settings_ui(ui));
+                    egui::ScrollArea::vertical()
+                        .auto_shrink([false, false])
+                        .show(ui, |ui| self.settings_ui(ui));
                 }
                 Page::History => self.history_ui(ui),
                 _ => self.entries_ui(ui),
@@ -750,6 +752,10 @@ fn format_time(timestamp: u64) -> String {
     )
 }
 fn theme(ctx: &egui::Context, selected: Theme) {
+    ctx.set_theme(match selected {
+        Theme::Dark => egui::Theme::Dark,
+        Theme::Light => egui::Theme::Light,
+    });
     ctx.send_viewport_cmd(egui::ViewportCommand::SetTheme(match selected {
         Theme::Dark => egui::SystemTheme::Dark,
         Theme::Light => egui::SystemTheme::Light,
@@ -932,6 +938,11 @@ mod tests {
                                     egui::vec2(900., 620.),
                                 )),
                                 time: Some(frame as f64 / 60.),
+                                system_theme: Some(if theme == Theme::Dark {
+                                    egui::Theme::Light
+                                } else {
+                                    egui::Theme::Dark
+                                }),
                                 ..Default::default()
                             },
                             |ctx| desktop.update(ctx),

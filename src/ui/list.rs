@@ -22,15 +22,15 @@ impl Columns {
         let action =
             egui::Rect::from_min_max(egui::pos2(rect.right() - 116., rect.top()), rect.max);
         let state = egui::Rect::from_min_max(
-            egui::pos2(action.left() - 50., rect.top()),
+            egui::pos2(action.left() - 80., rect.top()),
             egui::pos2(action.left() - 8., rect.bottom()),
         );
         let scope = egui::Rect::from_min_max(
-            egui::pos2(state.left() - 120., rect.top()),
+            egui::pos2(state.left() - 156., rect.top()),
             egui::pos2(state.left() - 8., rect.bottom()),
         );
         let source = egui::Rect::from_min_max(
-            egui::pos2(scope.left() - 122., rect.top()),
+            egui::pos2(scope.left() - 144., rect.top()),
             egui::pos2(scope.left() - 8., rect.bottom()),
         );
         let name =
@@ -140,7 +140,24 @@ impl Desktop {
             .show(ctx, |ui| {
                 ui.spacing_mut().item_spacing.y = 3.;
                 ui.horizontal(|ui| {
-                    let width = (ui.available_width() - 300.).max(100.);
+                    let font = egui::TextStyle::Button.resolve(ui.style());
+                    let controls_width: f32 = ["Close details", "Remove…", "Copy details"]
+                        .into_iter()
+                        .map(|label| {
+                            ui.painter()
+                                .layout_no_wrap(
+                                    language.text(label).into(),
+                                    font.clone(),
+                                    colors.text,
+                                )
+                                .size()
+                                .x
+                                + ui.spacing().button_padding.x * 2.
+                        })
+                        .sum();
+                    let width =
+                        (ui.available_width() - controls_width - ui.spacing().item_spacing.x * 4.)
+                            .max(100.);
                     let (name_rect, _) =
                         ui.allocate_exact_size(egui::vec2(width, 28.), egui::Sense::hover());
                     text(ui, name_rect, &entry.name, colors.text, true);
@@ -419,14 +436,16 @@ impl Desktop {
                             language.text(entry.source_name()),
                             colors.muted,
                             false,
-                        );
+                        )
+                        .on_hover_text(language.text(entry.source_name()));
                         text(
                             ui,
                             columns.scope,
                             language.text(&entry.scope),
                             colors.muted,
                             false,
-                        );
+                        )
+                        .on_hover_text(language.text(&entry.scope));
                         status_icon(ui.painter(), columns.state, entry.enabled, &colors);
                         let state = if entry.enabled {
                             language.text("Enabled")
