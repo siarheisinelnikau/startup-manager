@@ -51,7 +51,7 @@ fn status_icon(
     colors: &crate::appearance::Colors,
 ) {
     let center = rect.center();
-    let stroke = Stroke::new(1.35, if enabled { colors.text } else { colors.muted });
+    let stroke = Stroke::new(1.35_f32, if enabled { colors.text } else { colors.muted });
     painter.circle_stroke(center, 6.5, stroke);
     if enabled {
         painter.add(egui::Shape::line(
@@ -135,7 +135,7 @@ impl Desktop {
                 egui::Frame::new()
                     .fill(colors.panel)
                     .inner_margin(egui::Margin::symmetric(16, 8))
-                    .stroke(Stroke::new(1., colors.border)),
+                    .stroke(Stroke::new(1.0_f32, colors.border)),
             )
             .show(ctx, |ui| {
                 ui.spacing_mut().item_spacing.y = 3.;
@@ -409,7 +409,7 @@ impl Desktop {
                             ui.painter().rect_stroke(
                                 icon_rect.shrink(2.),
                                 2.,
-                                Stroke::new(1., colors.muted),
+                                Stroke::new(1.0_f32, colors.muted),
                                 egui::StrokeKind::Inside,
                             );
                             ui.painter().line_segment(
@@ -417,7 +417,7 @@ impl Desktop {
                                     icon_rect.left_top() + egui::vec2(2., 7.),
                                     icon_rect.right_top() + egui::vec2(-2., 7.),
                                 ],
-                                Stroke::new(1., colors.muted),
+                                Stroke::new(1.0_f32, colors.muted),
                             );
                         }
                         let name = egui::Rect::from_min_max(
@@ -478,7 +478,7 @@ impl Desktop {
                             ui.painter().rect_stroke(
                                 selection_rect.shrink(1.),
                                 2.,
-                                Stroke::new(1., colors.accent),
+                                Stroke::new(1.0_f32, colors.accent),
                                 egui::StrokeKind::Inside,
                             );
                         }
@@ -526,14 +526,14 @@ impl Desktop {
                                             button_rect.bottom() - 5.,
                                         ),
                                     ],
-                                    Stroke::new(1., colors.muted),
+                                    Stroke::new(1.0_f32, colors.muted),
                                 );
                             }
                             if response.has_focus() {
                                 ui.painter().rect_stroke(
                                     button_rect,
                                     3.,
-                                    Stroke::new(1., colors.accent),
+                                    Stroke::new(1.0_f32, colors.accent),
                                     egui::StrokeKind::Inside,
                                 );
                             }
