@@ -1,7 +1,8 @@
 {
   "backend": "production CPU rasterizer",
-  "elapsed_ms": 27,
+  "elapsed_ms": 32,
   "frames": 3,
+  "language": "en",
   "logical_size": [
     1120,
     760
@@ -24,5 +25,6 @@
   "scenario": "isolated examples of installed Windows utilities; all startup mutations disabled",
   "screen": "settings",
   "surface": "client area, offscreen",
-  "version": "0.1.2"
+  "theme": "dark",
+  "version": "0.2.0"
 }

@@ -1,0 +1,30 @@
+{
+  "backend": "production CPU rasterizer",
+  "elapsed_ms": 28,
+  "frames": 3,
+  "language": "fr",
+  "logical_size": [
+    900,
+    620
+  ],
+  "metrics": {
+    "list": {
+      "first_name_left": 54.0,
+      "fully_visible_rows": 11,
+      "list_height": 396.0,
+      "selected_details": true,
+      "total_rows": 13
+    },
+    "resolved_native_icons": 13
+  },
+  "physical_pixels": [
+    900,
+    620
+  ],
+  "scale": 1.0,
+  "scenario": "isolated examples of installed Windows utilities; all startup mutations disabled",
+  "screen": "selected",
+  "surface": "client area, offscreen",
+  "theme": "light",
+  "version": "0.2.0"
+}
