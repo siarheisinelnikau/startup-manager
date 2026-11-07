@@ -1,0 +1,12 @@
+{
+  "repository": "siarheisinelnikau/startup-manager",
+  "product": "StartupManager",
+  "kind": "desktop",
+  "assets": [
+    {
+      "name": "StartupManager-v{version}.exe"
+    }
+  ],
+  "notices": true,
+  "checksum_aliases": []
+}
